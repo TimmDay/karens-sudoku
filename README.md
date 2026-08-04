@@ -23,6 +23,8 @@ npm run dev
 
 Then open the local URL printed by Vite.
 
+The service worker is registered only in production builds. To test installation and offline behavior locally, run `npm run build` followed by `npm run preview`.
+
 Other checks:
 
 ```bash
@@ -35,3 +37,6 @@ npm run build
 
 Game data never leaves the browser. Clearing site data removes all progress unless it has first been exported from the app.
 
+## Deployment
+
+The repository includes `vercel.json` and is ready to import into Vercel. Account connection and production deployment are intentionally deferred. Vite's default build command (`npm run build`) and output directory (`dist`) are suitable for Vercel's Vite preset.
