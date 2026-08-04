@@ -435,8 +435,8 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  width: 90%;
-  height: 85%;
+  width: 82%;
+  height: 72%;
   align-items: center;
   font-size: clamp(0.36rem, 1.8vw, 0.65rem);
 }
@@ -444,6 +444,7 @@ h1 {
   min-width: 0;
   font-style: normal;
   text-align: center;
+  color: #756d5f;
 }
 .notes i.note-match {
   font-weight: 800;
@@ -701,6 +702,9 @@ h1 {
 [data-theme='dark'] .cell {
   color: #f4eee2;
   background: #202724;
+}
+[data-theme='dark'] .notes i {
+  color: #c8bfae;
 }
 [data-theme='light'],
 [data-theme='light'] body {
