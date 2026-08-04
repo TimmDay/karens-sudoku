@@ -159,7 +159,17 @@ function GameBoard({
                 }}
               >
                 <i className="grid-line" aria-hidden="true" />
-                {first && <span className="cage-sum">{cage.sum}</span>}
+                {first && (
+                  <span
+                    className="cage-sum"
+                    style={{
+                      top: row === 0 ? '5px' : undefined,
+                      left: col === 0 ? '6px' : undefined,
+                    }}
+                  >
+                    {cage.sum}
+                  </span>
+                )}
                 {cell.value ? (
                   <span className="cell-value">{cell.value}</span>
                 ) : (
