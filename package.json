@@ -28,6 +28,7 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "jsdom": "latest",
+    "typescript-eslint": "latest",
     "vitest": "latest"
   }
 }
