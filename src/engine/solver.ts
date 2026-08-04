@@ -13,12 +13,15 @@ export interface SolveResult {
 const FULL_MASK = 0b1111111110
 const digitMask = (digit: number) => 1 << digit
 const digitsFromMask = (mask: number) => Array.from({ length: 9 }, (_, index) => index + 1).filter((digit) => mask & digitMask(digit))
-const singleDigit = (mask: number) => mask !== 0 && (mask & (mask - 1)) === 0 ? Math.log2(mask) : 0
+const singleDigit = (mask: number) => (mask !== 0 && (mask & (mask - 1)) === 0 ? Math.log2(mask) : 0)
 
 const combinationMasks = (size: number, sum: number): number[] => {
   const masks: number[] = []
   const visit = (digit: number, left: number, remaining: number, mask: number) => {
-    if (left === 0) { if (remaining === 0) masks.push(mask); return }
+    if (left === 0) {
+      if (remaining === 0) masks.push(mask)
+      return
+    }
     for (let next = digit; next <= 9; next++) {
       if (next > remaining) break
       visit(next + 1, left - 1, remaining - next, mask | digitMask(next))
@@ -56,7 +59,7 @@ export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, lim
     let changed = true
     while (changed) {
       changed = false
-      const masks = grid.map((value, cell) => value ? 0 : candidateMask(grid, cell))
+      const masks = grid.map((value, cell) => (value ? 0 : candidateMask(grid, cell)))
       if (masks.some((mask, cell) => !grid[cell] && mask === 0)) return false
       for (let cell = 0; cell < 81; cell++) {
         if (grid[cell]) continue
@@ -72,7 +75,7 @@ export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, lim
       for (const unit of [...ROWS, ...COLS, ...BOXES]) {
         for (let digit = 1; digit <= 9; digit++) {
           if (unit.some((cell) => grid[cell] === digit)) continue
-          const places = unit.filter((cell) => !grid[cell] && (masks[cell]! & digitMask(digit)))
+          const places = unit.filter((cell) => !grid[cell] && masks[cell]! & digitMask(digit))
           if (places.length === 0) return false
           if (places.length === 1) {
             assign(grid, places[0]!, digit)
@@ -97,10 +100,15 @@ export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, lim
       if (grid[cell]) continue
       const mask = candidateMask(grid, cell)
       if (chosen < 0 || digitsFromMask(mask).length < digitsFromMask(chosenMask).length) {
-        chosen = cell; chosenMask = mask
+        chosen = cell
+        chosenMask = mask
       }
     }
-    if (chosen < 0) { count++; first ??= grid; return }
+    if (chosen < 0) {
+      count++
+      first ??= grid
+      return
+    }
     nodes++
     techniques.search = (techniques.search ?? 0) + 1
     for (const digit of digitsFromMask(chosenMask)) {

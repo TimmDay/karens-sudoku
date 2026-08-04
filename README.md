@@ -12,6 +12,8 @@ A mobile-first Killer Sudoku progressive web app designed primarily for current 
 
 End-to-end user flows are covered by a manual test checklist rather than Playwright.
 
+The persisted document uses a top-level schema version. Future changes must add sequential, pure migrations (`v1 → v2 → v3`) and retain individual attempt records so summaries can be recalculated. Unknown future versions and invalid puzzles are rejected rather than partially loaded.
+
 ## Development
 
 Requires a current Node.js release.
@@ -30,6 +32,7 @@ Other checks:
 ```bash
 npm test
 npm run lint
+npm run format:check
 npm run build
 ```
 

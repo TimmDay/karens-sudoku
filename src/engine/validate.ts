@@ -21,7 +21,8 @@ export const validatePuzzle = (value: unknown): value is Puzzle => {
       changed = false
       for (const cell of cage.cells) {
         if (!connected.has(cell) && orthogonalNeighbours(cell).some((peer) => connected.has(peer))) {
-          connected.add(cell); changed = true
+          connected.add(cell)
+          changed = true
         }
       }
     }
@@ -33,4 +34,3 @@ export const validatePuzzle = (value: unknown): value is Puzzle => {
   }
   return covered.size === 81
 }
-

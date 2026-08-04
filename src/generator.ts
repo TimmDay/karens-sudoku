@@ -33,10 +33,12 @@ const makeCages = (solution: readonly number[], difficulty: Difficulty, random: 
     for (const cage of [...cages]) {
       if (cage.cells.length !== 1) continue
       const cell = cage.cells[0]!
-      const adjacent = shuffle(cages, random).find((candidate) =>
-        candidate !== cage && candidate.cells.length < 5 &&
-        candidate.cells.some((member) => orthogonalNeighbours(cell).includes(member)) &&
-        candidate.cells.every((member) => solution[member] !== solution[cell]),
+      const adjacent = shuffle(cages, random).find(
+        (candidate) =>
+          candidate !== cage &&
+          candidate.cells.length < 5 &&
+          candidate.cells.some((member) => orthogonalNeighbours(cell).includes(member)) &&
+          candidate.cells.every((member) => solution[member] !== solution[cell]),
       )
       if (adjacent) {
         adjacent.cells.push(cell)

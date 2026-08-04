@@ -21,7 +21,14 @@ export const createGame = (puzzle: Puzzle): GameState => ({
 
 const withHistory = (game: GameState, update: (draft: GameState) => void): GameState => {
   if (game.status !== 'playing') return game
-  const next: GameState = { ...game, cells: copyCells(game.cells), past: [...game.past, snapshot(game)].slice(-200), future: [], started: true, savedAt: Date.now() }
+  const next: GameState = {
+    ...game,
+    cells: copyCells(game.cells),
+    past: [...game.past, snapshot(game)].slice(-200),
+    future: [],
+    started: true,
+    savedAt: Date.now(),
+  }
   update(next)
   return next
 }
@@ -37,17 +44,17 @@ const peerCells = (game: GameState, cell: number): Set<number> => {
 export const enterDigit = (game: GameState, cell: number, digit: number): GameState => {
   if (game.cells[cell]?.value) return game
   return withHistory(game, (next) => {
-  const target = next.cells[cell]!
-  target.value = digit
-  target.notes = []
-  target.wrong = next.puzzle.solution[cell] !== digit
-  if (target.wrong) {
-    next.mistakes++
-    if (next.mistakes >= 3) next.status = 'lost'
-  } else {
-    for (const peer of peerCells(next, cell)) next.cells[peer]!.notes = next.cells[peer]!.notes.filter((note) => note !== digit)
-    if (next.cells.every((state, index) => state.value === next.puzzle.solution[index])) next.status = 'won'
-  }
+    const target = next.cells[cell]!
+    target.value = digit
+    target.notes = []
+    target.wrong = next.puzzle.solution[cell] !== digit
+    if (target.wrong) {
+      next.mistakes++
+      if (next.mistakes >= 3) next.status = 'lost'
+    } else {
+      for (const peer of peerCells(next, cell)) next.cells[peer]!.notes = next.cells[peer]!.notes.filter((note) => note !== digit)
+      if (next.cells.every((state, index) => state.value === next.puzzle.solution[index])) next.status = 'won'
+    }
   })
 }
 
@@ -62,21 +69,38 @@ export const toggleNote = (game: GameState, cell: number, digit: number): GameSt
 export const eraseCell = (game: GameState, cell: number): GameState => {
   const current = game.cells[cell]
   if (!current || (!current.value && !current.notes.length)) return game
-  return withHistory(game, (next) => { next.cells[cell] = { value: null, notes: [], wrong: false } })
+  return withHistory(game, (next) => {
+    next.cells[cell] = { value: null, notes: [], wrong: false }
+  })
 }
 
 export const undo = (game: GameState): GameState => {
   const previous = game.past.at(-1)
   if (!previous) return game
-  return { ...game, ...previous, cells: copyCells(previous.cells), past: game.past.slice(0, -1), future: [snapshot(game), ...game.future], savedAt: Date.now() }
+  return {
+    ...game,
+    ...previous,
+    cells: copyCells(previous.cells),
+    past: game.past.slice(0, -1),
+    future: [snapshot(game), ...game.future],
+    savedAt: Date.now(),
+  }
 }
 
 export const redo = (game: GameState): GameState => {
   const next = game.future[0]
   if (!next) return game
-  return { ...game, ...next, cells: copyCells(next.cells), past: [...game.past, snapshot(game)], future: game.future.slice(1), savedAt: Date.now() }
+  return {
+    ...game,
+    ...next,
+    cells: copyCells(next.cells),
+    past: [...game.past, snapshot(game)],
+    future: game.future.slice(1),
+    savedAt: Date.now(),
+  }
 }
 
-export const tick = (game: GameState): GameState => game.started && !game.paused && game.status === 'playing'
-  ? { ...game, elapsedSeconds: game.elapsedSeconds + 1, savedAt: Date.now() }
-  : game
+export const tick = (game: GameState): GameState =>
+  game.started && !game.paused && game.status === 'playing'
+    ? { ...game, elapsedSeconds: game.elapsedSeconds + 1, savedAt: Date.now() }
+    : game

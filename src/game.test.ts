@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { generatePuzzle } from './generator'
-import { createGame, enterDigit, eraseCell, redo, toggleNote, undo } from './game'
+import { createGame, enterDigit, eraseCell, redo, tick, toggleNote, undo } from './game'
 
 describe('game state', () => {
   const puzzle = generatePuzzle('easy', 12)
@@ -44,5 +44,13 @@ describe('game state', () => {
     for (let cell = 0; cell < 3; cell++) game = enterDigit(game, cell, puzzle.solution[cell] === 1 ? 2 : 1)
     expect(game.status).toBe('lost')
     expect(eraseCell(game, 0)).toBe(game)
+  })
+
+  it('counts only active started play time', () => {
+    const untouched = createGame(puzzle)
+    expect(tick(untouched).elapsedSeconds).toBe(0)
+    const started = toggleNote(untouched, 0, 1)
+    expect(tick(started).elapsedSeconds).toBe(1)
+    expect(tick({ ...started, paused: true }).elapsedSeconds).toBe(0)
   })
 })

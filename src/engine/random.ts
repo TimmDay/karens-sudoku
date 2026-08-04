@@ -25,4 +25,3 @@ export const hashNumbers = (values: readonly number[]): number => {
   for (const value of values) hash = Math.imul(hash ^ value, 16777619)
   return hash >>> 0
 }
-

@@ -6,7 +6,7 @@ export const COLS = Array.from({ length: 9 }, (_, col) => Array.from({ length: 9
 export const BOXES = Array.from({ length: 9 }, (_, box) => {
   const top = Math.floor(box / 3) * 3
   const left = (box % 3) * 3
-  return Array.from({ length: 9 }, (_, offset) => (top + Math.floor(offset / 3)) * 9 + left + offset % 3)
+  return Array.from({ length: 9 }, (_, offset) => (top + Math.floor(offset / 3)) * 9 + left + (offset % 3))
 })
 
 export const PEERS = Array.from({ length: 81 }, (_, cell) => {
@@ -19,8 +19,7 @@ export const PEERS = Array.from({ length: 81 }, (_, cell) => {
 export const orthogonalNeighbours = (cell: number): number[] => {
   const row = Math.floor(cell / 9)
   const col = cell % 9
-  return [row > 0 ? cell - 9 : -1, row < 8 ? cell + 9 : -1, col > 0 ? cell - 1 : -1, col < 8 ? cell + 1 : -1]
-    .filter((value) => value >= 0)
+  return [row > 0 ? cell - 9 : -1, row < 8 ? cell + 9 : -1, col > 0 ? cell - 1 : -1, col < 8 ? cell + 1 : -1].filter((value) => value >= 0)
 }
 
 export const generateSolution = (random: Random): number[] => {
@@ -34,7 +33,9 @@ export const generateSolution = (random: Random): number[] => {
 
 export const isValidSolution = (grid: readonly number[]): boolean => {
   const validGroup = (group: readonly number[]) => new Set(group.map((cell) => grid[cell])).size === 9
-  return grid.length === 81 && grid.every((digit) => Number.isInteger(digit) && digit >= 1 && digit <= 9) &&
+  return (
+    grid.length === 81 &&
+    grid.every((digit) => Number.isInteger(digit) && digit >= 1 && digit <= 9) &&
     [...ROWS, ...COLS, ...BOXES].every(validGroup)
+  )
 }
-
