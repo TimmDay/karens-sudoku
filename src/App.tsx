@@ -33,6 +33,7 @@ function GameBoard({
   onNewPuzzle,
   sound,
   haptics,
+  newBest,
 }: {
   game: GameState
   setGame: (game: GameState) => void
@@ -41,15 +42,18 @@ function GameBoard({
   onNewPuzzle: () => void
   sound: boolean
   haptics: boolean
+  newBest: boolean
 }) {
   const [selected, setSelected] = useState(0)
   const [mode, setMode] = useState<Mode>('entry')
+  const [highlightedDigit, setHighlightedDigit] = useState<number | null>(null)
   const selectedValue = game.cells[selected]?.value
   const selectedCage = game.puzzle.cageByCell[selected]
   const selectedRow = Math.floor(selected / 9)
   const selectedCol = selected % 9
 
   const input = (digit: number) => {
+    setHighlightedDigit(digit)
     const next = mode === 'notes' ? toggleNote(game, selected, digit) : enterDigit(game, selected, digit)
     if (next === game) return
     if (haptics) navigator.vibrate?.(next.cells[selected]?.wrong ? [30, 30, 30] : 12)
@@ -123,7 +127,8 @@ function GameBoard({
               col === selectedCol ||
               (Math.floor(row / 3) === Math.floor(selectedRow / 3) && Math.floor(col / 3) === Math.floor(selectedCol / 3)) ||
               game.puzzle.cageByCell[index] === selectedCage
-            const matching = selectedValue && cell.value === selectedValue
+            const focusDigit = selectedValue ?? highlightedDigit
+            const matching = Boolean(focusDigit && (cell.value === focusDigit || cell.notes.includes(focusDigit)))
             return (
               <button
                 type="button"
@@ -160,6 +165,7 @@ function GameBoard({
             <p>
               {formatTime(game.elapsedSeconds)} · {game.mistakes} mistakes
             </p>
+            {game.status === 'won' && newBest && <p className="new-best">New best time!</p>}
             <div className="result-actions">
               <button onClick={onRestart}>Restart same puzzle</button>
               <button onClick={onNewPuzzle}>New puzzle</button>
@@ -422,6 +428,16 @@ export default function App() {
         onNewPuzzle={() => startFreshPuzzle(difficulty)}
         sound={data.settings.sound}
         haptics={data.settings.haptics}
+        newBest={
+          game.status === 'won' &&
+          game.elapsedSeconds <=
+            Math.min(
+              ...data.attempts
+                .filter((attempt) => attempt.difficulty === difficulty && attempt.outcome === 'completed')
+                .map((attempt) => attempt.elapsedSeconds),
+              Number.POSITIVE_INFINITY,
+            )
+        }
       />
     )
 

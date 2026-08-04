@@ -123,7 +123,7 @@
 - [x] Prevent accidental page zooming, text selection, and unwanted scrolling during play.
 - [x] Support portrait and landscape orientations.
 - [x] Highlight the selected cell and its row, column, box, and cage.
-- [ ] Highlight matching entered digits and notes.
+- [x] Highlight matching entered digits and notes.
 - [x] Distinguish correct entries, wrong entries, notes, and selected states without relying only on colour.
 - [x] Show when all nine instances of a digit have been correctly placed.
 - [x] Add a number pad for digits 1–9.
@@ -168,7 +168,7 @@
 - [x] Treat a same-puzzle restart as a new attempt with zero time and mistakes.
 - [x] Detect puzzle completion and stop the timer.
 - [x] Record whether a completed attempt had zero mistakes.
-- [ ] Show a concise completion summary with time, mistakes, and any new best time.
+- [x] Show a concise completion summary with time, mistakes, and any new best time.
 
 ## 11. Statistics
 

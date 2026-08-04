@@ -439,6 +439,10 @@ h1 {
 .board-cover p {
   margin: 0.55rem;
 }
+.board-cover .new-best {
+  color: #f8d8a2;
+  font-weight: 750;
+}
 .edit-tools {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
