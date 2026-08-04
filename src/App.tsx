@@ -18,10 +18,16 @@ const cellBorders = (puzzle: Puzzle, cell: number) => {
   const row = Math.floor(cell / 9)
   const col = cell % 9
   return {
-    '--cage-top': row === 0 || puzzle.cageByCell[cell - 9] !== cage ? '5px' : '0px',
-    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '5px' : '0px',
-    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '5px' : '0px',
-    '--cage-left': col === 0 || puzzle.cageByCell[cell - 1] !== cage ? '5px' : '0px',
+    '--grid-top': row === 0 ? '1px' : '0px',
+    '--grid-left': col === 0 ? '1px' : '0px',
+    '--grid-right': '1px',
+    '--grid-bottom': '1px',
+    '--group-right': col === 2 || col === 5 ? '3px' : '0px',
+    '--group-bottom': row === 2 || row === 5 ? '3px' : '0px',
+    '--cage-top': row === 0 ? '4px' : '0px',
+    '--cage-left': col === 0 ? '4px' : '0px',
+    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '4px' : '0px',
+    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '4px' : '0px',
   } as React.CSSProperties
 }
 
@@ -46,14 +52,13 @@ function GameBoard({
 }) {
   const [selected, setSelected] = useState(0)
   const [mode, setMode] = useState<Mode>('entry')
-  const [highlightedDigit, setHighlightedDigit] = useState<number | null>(null)
+  const [focused, setFocused] = useState(true)
   const selectedValue = game.cells[selected]?.value
   const selectedCage = game.puzzle.cageByCell[selected]
   const selectedRow = Math.floor(selected / 9)
   const selectedCol = selected % 9
 
   const input = (digit: number) => {
-    setHighlightedDigit(digit)
     const next = mode === 'notes' ? toggleNote(game, selected, digit) : enterDigit(game, selected, digit)
     if (next === game) return
     if (haptics) navigator.vibrate?.(next.cells[selected]?.wrong ? [30, 30, 30] : 12)
@@ -87,11 +92,21 @@ function GameBoard({
       else if (event.key === 'ArrowUp') setSelected((value) => Math.max(0, value - 9))
       else if (event.key === 'ArrowDown') setSelected((value) => Math.min(80, value + 9))
       else return
+      setFocused(true)
       event.preventDefault()
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   })
+
+  useEffect(() => {
+    const pointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target?.closest('.board, .number-pad, .edit-tools')) setFocused(false)
+    }
+    document.addEventListener('pointerdown', pointerDown)
+    return () => document.removeEventListener('pointerdown', pointerDown)
+  }, [])
 
   return (
     <main className="game-screen">
@@ -127,26 +142,34 @@ function GameBoard({
               col === selectedCol ||
               (Math.floor(row / 3) === Math.floor(selectedRow / 3) && Math.floor(col / 3) === Math.floor(selectedCol / 3)) ||
               game.puzzle.cageByCell[index] === selectedCage
-            const focusDigit = selectedValue ?? highlightedDigit
-            const matching = Boolean(focusDigit && (cell.value === focusDigit || cell.notes.includes(focusDigit)))
+            const matching = Boolean(selectedValue && cell.value === selectedValue)
             return (
               <button
                 type="button"
                 role="gridcell"
                 key={index}
                 aria-label={`Row ${row + 1}, column ${col + 1}${cell.value ? `, ${cell.value}${cell.wrong ? ', incorrect' : ''}` : ''}`}
-                className={`cell ${index === selected ? 'selected' : ''} ${related ? 'related' : ''} ${matching ? 'matching' : ''} ${cell.wrong ? 'wrong' : ''}`}
+                className={`cell ${focused && index === selected ? 'selected' : ''} ${focused && related ? 'related' : ''} ${focused && matching ? 'matching' : ''} ${cell.wrong ? 'wrong' : ''}`}
                 style={cellBorders(game.puzzle, index)}
-                onClick={() => setSelected(index)}
+                onClick={() => {
+                  setSelected(index)
+                  setFocused(true)
+                }}
               >
+                <i className="grid-line" aria-hidden="true" />
                 {first && <span className="cage-sum">{cage.sum}</span>}
                 {cell.value ? (
                   <span className="cell-value">{cell.value}</span>
                 ) : (
                   <span className="notes">
-                    {Array.from({ length: 9 }, (_, digit) => (
-                      <i key={digit}>{cell.notes.includes(digit + 1) ? digit + 1 : ''}</i>
-                    ))}
+                    {Array.from({ length: 9 }, (_, digit) => {
+                      const has = cell.notes.includes(digit + 1)
+                      return (
+                        <i key={digit} className={focused && has && selectedValue === digit + 1 ? 'note-match' : ''}>
+                          {has ? digit + 1 : ''}
+                        </i>
+                      )
+                    })}
                   </span>
                 )}
               </button>
