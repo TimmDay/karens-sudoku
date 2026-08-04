@@ -34,7 +34,9 @@ const peerCells = (game: GameState, cell: number): Set<number> => {
   return new Set([...ROWS[row]!, ...COLS[col]!, ...BOXES[box]!, ...cage.cells])
 }
 
-export const enterDigit = (game: GameState, cell: number, digit: number): GameState => withHistory(game, (next) => {
+export const enterDigit = (game: GameState, cell: number, digit: number): GameState => {
+  if (game.cells[cell]?.value) return game
+  return withHistory(game, (next) => {
   const target = next.cells[cell]!
   target.value = digit
   target.notes = []
@@ -46,7 +48,8 @@ export const enterDigit = (game: GameState, cell: number, digit: number): GameSt
     for (const peer of peerCells(next, cell)) next.cells[peer]!.notes = next.cells[peer]!.notes.filter((note) => note !== digit)
     if (next.cells.every((state, index) => state.value === next.puzzle.solution[index])) next.status = 'won'
   }
-})
+  })
+}
 
 export const toggleNote = (game: GameState, cell: number, digit: number): GameState => {
   if (game.cells[cell]?.value) return game
@@ -77,4 +80,3 @@ export const redo = (game: GameState): GameState => {
 export const tick = (game: GameState): GameState => game.started && !game.paused && game.status === 'playing'
   ? { ...game, elapsedSeconds: game.elapsedSeconds + 1, savedAt: Date.now() }
   : game
-

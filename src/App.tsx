@@ -21,7 +21,7 @@ const cellBorders = (puzzle: Puzzle, cell: number) => {
   } as React.CSSProperties
 }
 
-function GameBoard({ game, setGame, onHome }: { game: GameState; setGame: (game: GameState) => void; onHome: () => void }) {
+function GameBoard({ game, setGame, onHome, onRestart, onNewPuzzle, sound, haptics }: { game: GameState; setGame: (game: GameState) => void; onHome: () => void; onRestart: () => void; onNewPuzzle: () => void; sound: boolean; haptics: boolean }) {
   const [selected, setSelected] = useState(0)
   const [mode, setMode] = useState<Mode>('entry')
   const selectedValue = game.cells[selected]?.value
@@ -29,7 +29,24 @@ function GameBoard({ game, setGame, onHome }: { game: GameState; setGame: (game:
   const selectedRow = Math.floor(selected / 9)
   const selectedCol = selected % 9
 
-  const input = (digit: number) => setGame(mode === 'notes' ? toggleNote(game, selected, digit) : enterDigit(game, selected, digit))
+  const input = (digit: number) => {
+    const next = mode === 'notes' ? toggleNote(game, selected, digit) : enterDigit(game, selected, digit)
+    if (next === game) return
+    if (haptics) navigator.vibrate?.(next.cells[selected]?.wrong ? [30, 30, 30] : 12)
+    if (sound) {
+      const AudioContextClass = window.AudioContext
+      const context = new AudioContextClass()
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.frequency.value = next.cells[selected]?.wrong ? 180 : 520
+      gain.gain.setValueAtTime(.025, context.currentTime)
+      gain.gain.exponentialRampToValueAtTime(.001, context.currentTime + .08)
+      oscillator.connect(gain).connect(context.destination)
+      oscillator.start(); oscillator.stop(context.currentTime + .08)
+    }
+    setGame(next)
+  }
+  const completeDigits = new Set(Array.from({ length: 9 }, (_, index) => index + 1).filter((digit) => game.cells.filter((cell) => cell.value === digit && !cell.wrong).length === 9))
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -74,7 +91,7 @@ function GameBoard({ game, setGame, onHome }: { game: GameState; setGame: (game:
         })}
       </div>
       {game.paused && <div className="board-cover"><strong>Paused</strong><button onClick={() => setGame({ ...game, paused: false })}>Resume</button></div>}
-      {game.status !== 'playing' && <div className="board-cover"><strong>{game.status === 'won' ? 'Beautifully done!' : 'Three mistakes'}</strong><p>{formatTime(game.elapsedSeconds)} · {game.mistakes} mistakes</p><button onClick={onHome}>Continue</button></div>}
+      {game.status !== 'playing' && <div className="board-cover"><strong>{game.status === 'won' ? 'Beautifully done!' : 'Three mistakes'}</strong><p>{formatTime(game.elapsedSeconds)} · {game.mistakes} mistakes</p><div className="result-actions"><button onClick={onRestart}>Restart same puzzle</button><button onClick={onNewPuzzle}>New puzzle</button><button className="secondary" onClick={onHome}>Home</button></div></div>}
     </div>
 
     <div className="edit-tools">
@@ -84,7 +101,7 @@ function GameBoard({ game, setGame, onHome }: { game: GameState; setGame: (game:
       <button onClick={() => setGame(redo(game))} disabled={!game.future.length}>↷<span>Redo</span></button>
     </div>
     <div className="number-pad" aria-label="Number pad">
-      {Array.from({ length: 9 }, (_, index) => index + 1).map((digit) => <button key={digit} onClick={() => input(digit)}>{digit}</button>)}
+      {Array.from({ length: 9 }, (_, index) => index + 1).map((digit) => <button className={completeDigits.has(digit) ? 'complete' : ''} disabled={completeDigits.has(digit)} aria-label={completeDigits.has(digit) ? `${digit}, complete` : `${digit}`} key={digit} onClick={() => input(digit)}>{digit}</button>)}
     </div>
   </main>
 }
@@ -131,8 +148,8 @@ export default function App() {
   useEffect(() => {
     if (!worker.current || generating) return
     const missing = difficulties.find((level) => !data.queued[level])
-    if (missing) worker.current.postMessage({ difficulty: missing, seed: (Date.now() + difficulties.indexOf(missing) * 1009) >>> 0 })
-  }, [data.queued, generating])
+    if (missing) worker.current.postMessage({ difficulty: missing, seed: (Date.now() + difficulties.indexOf(missing) * 1009) >>> 0, recentPuzzleIds: data.recentPuzzleIds })
+  }, [data.queued, data.recentPuzzleIds, generating])
 
   useEffect(() => {
     if (screen !== 'game' || !game || game.paused || game.status !== 'playing') return
@@ -176,7 +193,7 @@ export default function App() {
       setGenerating(level)
       // The seed is intentionally sampled at the user-action boundary.
       // eslint-disable-next-line react-hooks/purity
-      worker.current?.postMessage({ difficulty: level, seed: Date.now() >>> 0 })
+      worker.current?.postMessage({ difficulty: level, seed: Date.now() >>> 0, recentPuzzleIds: data.recentPuzzleIds })
     }
   }
 
@@ -214,9 +231,33 @@ export default function App() {
     if (window.confirm('This will replace all games, statistics, and settings on this device. Continue?')) setData(imported)
   }
 
-  if (screen === 'game' && game) return <GameBoard game={game} setGame={updateGame} onHome={() => { updateGame({ ...game, paused: true }); setScreen('home') }} />
+  const startFreshPuzzle = (level: Difficulty, abandon = false) => {
+    const queued = data.queued[level]
+    if (queued) {
+      setData((current) => {
+        let attempts = current.attempts
+        const oldGame = current.games[level]
+        if (abandon && oldGame?.started && oldGame.status === 'playing') {
+          const reverseIndex = [...attempts].reverse().findIndex((attempt) => attempt.puzzleId === oldGame.puzzle.id && attempt.outcome === 'playing')
+          if (reverseIndex >= 0) {
+            const actual = attempts.length - reverseIndex - 1
+            attempts = attempts.map((attempt, index) => index === actual ? { ...attempt, outcome: 'abandoned', endedAt: Date.now(), elapsedSeconds: oldGame.elapsedSeconds, mistakes: oldGame.mistakes } : attempt)
+          }
+        }
+        return { ...current, attempts, queued: { ...current.queued, [level]: undefined }, games: { ...current.games, [level]: createGame(queued) }, recentPuzzleIds: [...current.recentPuzzleIds, queued.id].slice(-100) }
+      })
+      setScreen('game')
+    } else {
+      foreground.current = level
+      setGenerating(level)
+      worker.current?.postMessage({ difficulty: level, seed: Date.now() >>> 0, recentPuzzleIds: data.recentPuzzleIds })
+      setScreen('home')
+    }
+  }
 
-  if (screen === 'stats') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">Your progress</p><h2>Statistics</h2><div className="stat-grid"><div><strong>{stats.played}</strong><span>Attempts</span></div><div><strong>{stats.completed}</strong><span>Completed</span></div><div><strong>{stats.failed}</strong><span>Failed</span></div><div><strong>{stats.clean}</strong><span>No mistakes</span></div><div><strong>{stats.average ? formatTime(stats.average) : '—'}</strong><span>Average</span></div><div><strong>{stats.best ? formatTime(stats.best) : '—'}</strong><span>Best time</span></div></div>{difficulties.map((level) => { const attempts = data.attempts.filter((attempt) => attempt.difficulty === level); return <div className="difficulty-stat" key={level}><strong>{titleCase(level)}</strong><span>{attempts.filter((attempt) => attempt.outcome === 'completed').length} completed · {attempts.length} attempts</span></div> })}</main>
+  if (screen === 'game' && game) return <GameBoard game={game} setGame={updateGame} onHome={() => { updateGame({ ...game, paused: true }); setScreen('home') }} onRestart={() => setData((current) => ({ ...current, games: { ...current.games, [difficulty]: createGame(game.puzzle) } }))} onNewPuzzle={() => startFreshPuzzle(difficulty)} sound={data.settings.sound} haptics={data.settings.haptics} />
+
+  if (screen === 'stats') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">Your progress</p><h2>Statistics</h2><div className="stat-grid"><div><strong>{stats.played}</strong><span>Attempts</span></div><div><strong>{stats.completed}</strong><span>Completed</span></div><div><strong>{stats.played ? `${Math.round(stats.completed / stats.played * 100)}%` : '—'}</strong><span>Completion rate</span></div><div><strong>{stats.failed}</strong><span>Failed</span></div><div><strong>{stats.clean}</strong><span>No mistakes</span></div><div><strong>{stats.average ? formatTime(stats.average) : '—'}</strong><span>Average</span></div><div><strong>{stats.best ? formatTime(stats.best) : '—'}</strong><span>Best time</span></div></div>{difficulties.map((level) => { const attempts = data.attempts.filter((attempt) => attempt.difficulty === level); return <div className="difficulty-stat" key={level}><strong>{titleCase(level)}</strong><span>{attempts.filter((attempt) => attempt.outcome === 'completed').length} completed · {attempts.length} attempts</span></div> })}</main>
 
   if (screen === 'settings') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">On this device</p><h2>Settings & data</h2><label className="setting-row"><span>Appearance</span><select value={data.settings.theme} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, theme: event.target.value as AppData['settings']['theme'] } }))}><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><label className="setting-row"><span>Sound feedback</span><input type="checkbox" checked={data.settings.sound} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, sound: event.target.checked } }))}/></label><label className="setting-row"><span>Haptic feedback</span><input type="checkbox" checked={data.settings.haptics} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, haptics: event.target.checked } }))}/></label><button className="data-button" onClick={() => setData((current) => ({ ...current, settings: { ...current.settings, introductionSeen: false } }))}>How to play</button><button className="data-button" onClick={downloadBackup}>Download backup</button><label className="data-button file-button">Import backup<input type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file) }}/></label><button className="data-button danger" onClick={() => { if (window.confirm('Reset statistics? Games and settings will remain.')) setData((current) => ({ ...current, attempts: [] })) }}>Reset statistics</button><button className="data-button danger" onClick={() => { if (window.confirm('Reset the entire app on this device? This cannot be undone.')) setData(defaultData()) }}>Reset entire app</button><p className="privacy-note">All data stays in this browser. Clearing browser site data removes it unless you download a backup first.</p></main>
 
@@ -226,7 +267,7 @@ export default function App() {
     <section className="welcome-card" aria-labelledby="welcome-title">
       <p className="kicker">Killer Sudoku</p><h2 id="welcome-title">Ready when you are.</h2><p>Choose a difficulty and settle into a new puzzle.</p>
       <div className="difficulty-list">
-        {difficulties.map((level) => <button key={level} onClick={() => newGame(level)}><span>{titleCase(level)}</span><small>{data.games[level]?.status === 'playing' && data.games[level]?.started ? `Resume · ${formatTime(data.games[level]!.elapsedSeconds)}` : data.queued[level] ? 'Ready to play' : 'New puzzle'}</small><b>›</b></button>)}
+        {difficulties.map((level) => { const active = data.games[level]?.status === 'playing' && data.games[level]?.started; return <div className="difficulty-choice" key={level}><button onClick={() => newGame(level)}><span>{titleCase(level)}</span><small>{active ? `Resume · ${formatTime(data.games[level]!.elapsedSeconds)}` : data.queued[level] ? 'Ready to play' : 'New puzzle'}</small><b>›</b></button>{active && <button className="replace-game" onClick={() => { if (window.confirm(`Abandon this ${level} attempt and start a new puzzle?`)) startFreshPuzzle(level, true) }}>New</button>}</div> })}
       </div>
     </section>
     <nav className="home-nav" aria-label="App navigation"><button onClick={() => setScreen('stats')}>Statistics</button><button onClick={() => setScreen('settings')}>Settings & data</button></nav>

@@ -32,4 +32,17 @@ describe('game state', () => {
     const wrong = puzzle.solution[0] === 1 ? 2 : 1
     expect(eraseCell(enterDigit(createGame(puzzle), 0, wrong), 0).mistakes).toBe(1)
   })
+
+  it('requires erasing before replacing an incorrect entry', () => {
+    const wrong = puzzle.solution[0] === 1 ? 2 : 1
+    const game = enterDigit(createGame(puzzle), 0, wrong)
+    expect(enterDigit(game, 0, puzzle.solution[0]!).cells[0]?.value).toBe(wrong)
+  })
+
+  it('locks after the third mistake', () => {
+    let game = createGame(puzzle)
+    for (let cell = 0; cell < 3; cell++) game = enterDigit(game, cell, puzzle.solution[cell] === 1 ? 2 : 1)
+    expect(game.status).toBe('lost')
+    expect(eraseCell(game, 0)).toBe(game)
+  })
 })
