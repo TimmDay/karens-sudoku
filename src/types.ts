@@ -22,6 +22,12 @@ export interface CellState {
   wrong: boolean
 }
 
+export interface GameSnapshot {
+  cells: CellState[]
+  mistakes: number
+  status: GameState['status']
+}
+
 export interface GameState {
   version: 1
   puzzle: Puzzle
@@ -31,4 +37,34 @@ export interface GameState {
   started: boolean
   status: 'playing' | 'won' | 'lost'
   savedAt: number
+  paused: boolean
+  past: GameSnapshot[]
+  future: GameSnapshot[]
+}
+
+export interface Attempt {
+  id: string
+  puzzleId: string
+  difficulty: Difficulty
+  startedAt: number
+  endedAt: number | null
+  elapsedSeconds: number
+  mistakes: number
+  outcome: 'playing' | 'completed' | 'failed' | 'abandoned'
+}
+
+export interface Settings {
+  theme: 'system' | 'light' | 'dark'
+  sound: boolean
+  haptics: boolean
+  introductionSeen: boolean
+}
+
+export interface AppData {
+  version: 1
+  games: Partial<Record<Difficulty, GameState>>
+  attempts: Attempt[]
+  queued: Partial<Record<Difficulty, Puzzle>>
+  recentPuzzleIds: string[]
+  settings: Settings
 }
