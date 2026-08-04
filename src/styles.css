@@ -13,7 +13,7 @@
   text-rendering: optimizeLegibility;
   --grid-line: #ebe5da;
   --box-line: #857e6e;
-  --cage-line: #635c50;
+  --cage-line: #4b453b;
 }
 
 * {
@@ -135,15 +135,20 @@ h1 {
   width: 100%;
 }
 .difficulty-choice .replace-game {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 3.6rem;
   min-height: 4.4rem;
   padding: 0;
   margin: 0;
-  border: 1px solid #d9d0c0;
-  color: #914d42;
-  background: transparent;
+  border: 0;
+  border-radius: 0.75rem;
+  color: #9a302a;
+  background: #f7d9d3;
   text-align: center;
   font-size: 0.72rem;
+  font-weight: 700;
 }
 .difficulty-list button {
   display: grid;
@@ -414,7 +419,7 @@ h1 {
   z-index: 4;
   top: 5px;
   left: 6px;
-  font-size: clamp(0.42rem, 1.7vw, 0.64rem);
+  font-size: clamp(0.52rem, 2vw, 0.68rem);
   font-weight: 750;
   line-height: 1;
 }
@@ -437,13 +442,13 @@ h1 {
   width: 60%;
   height: 55%;
   align-items: center;
-  font-size: clamp(0.36rem, 1.8vw, 0.65rem);
+  font-size: clamp(0.46rem, 2.1vw, 0.68rem);
 }
 .notes i {
   min-width: 0;
   font-style: normal;
   text-align: center;
-  color: #756d5f;
+  color: #574f43;
 }
 .notes i.note-match {
   font-weight: 800;
@@ -493,6 +498,9 @@ h1 {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 0.25rem;
+}
+.number-pad-row {
+  display: contents;
 }
 .number-pad button {
   min-width: 0;
@@ -561,6 +569,25 @@ h1 {
   }
   .number-pad button {
     min-height: 2.5rem;
+  }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .number-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .number-pad-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.55rem;
+  }
+  .number-pad button {
+    flex: 0 0 auto;
+    width: clamp(3.6rem, 16vw, 4.8rem);
+    min-height: clamp(3.6rem, 16vw, 4.8rem);
+    font-size: clamp(1.5rem, 7.5vw, 2.15rem);
   }
 }
 
@@ -689,7 +716,7 @@ h1 {
   background: #171b19;
   --grid-line: rgba(244, 238, 226, 0.1);
   --box-line: rgba(244, 238, 226, 0.3);
-  --cage-line: #cbb27a;
+  --cage-line: #b2985e;
 }
 [data-theme='dark'] .welcome-card,
 [data-theme='dark'] .stat-grid div {
@@ -703,7 +730,7 @@ h1 {
   background: #202724;
 }
 [data-theme='dark'] .notes i {
-  color: #c8bfae;
+  color: #d7cdb9;
 }
 [data-theme='light'],
 [data-theme='light'] body {
@@ -718,7 +745,7 @@ h1 {
     background: #171b19;
     --grid-line: rgba(244, 238, 226, 0.1);
     --box-line: rgba(244, 238, 226, 0.3);
-    --cage-line: #cbb27a;
+    --cage-line: #b2985e;
   }
   .welcome-card {
     border-color: #37554d;
@@ -743,6 +770,9 @@ h1 {
     color: #f4eee2;
     background: #202724;
   }
+  .notes i {
+    color: #d7cdb9;
+  }
   .difficulty-list button small,
   .game-header p,
   .mistakes,
@@ -759,6 +789,10 @@ h1 {
     background: #33544a;
   }
   .cell.wrong {
+    color: #ffb5aa;
+    background: #4b2927;
+  }
+  .difficulty-choice .replace-game {
     color: #ffb5aa;
     background: #4b2927;
   }

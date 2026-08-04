@@ -86,7 +86,7 @@ function GameBoard({
     const key = (event: KeyboardEvent) => {
       if (/^[1-9]$/.test(event.key)) input(Number(event.key))
       else if (event.key === 'Backspace' || event.key === 'Delete') setGame(eraseCell(game, selected))
-      else if (event.key.toLowerCase() === 'n') setMode((value) => (value === 'entry' ? 'notes' : 'entry'))
+      else if (event.key.toLowerCase() === 'n' || event.key === ' ') setMode((value) => (value === 'entry' ? 'notes' : 'entry'))
       else if (event.key === 'ArrowLeft') setSelected((value) => Math.max(0, value - 1))
       else if (event.key === 'ArrowRight') setSelected((value) => Math.min(80, value + 1))
       else if (event.key === 'ArrowUp') setSelected((value) => Math.max(0, value - 9))
@@ -215,16 +215,23 @@ function GameBoard({
         </button>
       </div>
       <div className="number-pad" aria-label="Number pad">
-        {Array.from({ length: 9 }, (_, index) => index + 1).map((digit) => (
-          <button
-            className={completeDigits.has(digit) ? 'complete' : ''}
-            disabled={completeDigits.has(digit)}
-            aria-label={completeDigits.has(digit) ? `${digit}, complete` : `${digit}`}
-            key={digit}
-            onClick={() => input(digit)}
-          >
-            {digit}
-          </button>
+        {[
+          [1, 2, 3, 4, 5],
+          [6, 7, 8, 9],
+        ].map((row, rowIndex) => (
+          <div className="number-pad-row" key={rowIndex}>
+            {row.map((digit) => (
+              <button
+                className={completeDigits.has(digit) ? 'complete' : ''}
+                disabled={completeDigits.has(digit)}
+                aria-label={completeDigits.has(digit) ? `${digit}, complete` : `${digit}`}
+                key={digit}
+                onClick={() => input(digit)}
+              >
+                {digit}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
     </main>
@@ -622,7 +629,7 @@ export default function App() {
       </header>
       <section className="welcome-card" aria-labelledby="welcome-title">
         <p className="kicker">Killer Sudoku</p>
-        <h2 id="welcome-title">Ready when you are.</h2>
+        <h2 id="welcome-title">Happy Woife, happy Loife.</h2>
         <p>Choose a difficulty and settle into a new puzzle.</p>
         <div className="difficulty-list">
           {difficulties.map((level) => {
@@ -684,7 +691,7 @@ export default function App() {
         <div className="modal-backdrop">
           <section className="introduction" role="dialog" aria-modal="true" aria-labelledby="intro-title">
             <p className="kicker">Welcome</p>
-            <h2 id="intro-title">Cage Fight Sudoku</h2>
+            <h2 id="intro-title">Sudoku with Cages</h2>
             <ul>
               <li>Place 1–9 once in every row, column, and 3×3 box.</li>
               <li>Digits inside each dotted cage add up to its small target.</li>
