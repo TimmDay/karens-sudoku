@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createGame, enterDigit, eraseCell, redo, tick, toggleNote, undo } from './game'
-import { difficulties, loadData, saveData } from './storage'
-import type { AppData, Difficulty, GameState, Puzzle } from './types'
+import { defaultData, difficulties, exportData, loadData, parseImport, saveData } from './storage'
+import type { AppData, Attempt, Difficulty, GameState, Puzzle } from './types'
 
-type Screen = 'home' | 'game'
+type Screen = 'home' | 'game' | 'stats' | 'settings'
 type Mode = 'entry' | 'notes'
 
 const titleCase = (value: string) => value[0]!.toUpperCase() + value.slice(1)
@@ -99,6 +99,8 @@ export default function App() {
   const foreground = useRef<Difficulty | null>(null)
   const game = data.games[difficulty]
 
+  const closeIntroduction = () => setData((current) => ({ ...current, settings: { ...current.settings, introductionSeen: true } }))
+
   useEffect(() => {
     const saved = saveData(data)
     queueMicrotask(() => setStorageOkay(saved))
@@ -146,7 +148,17 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', visibility)
   }, [difficulty, game])
 
-  const stats = useMemo(() => ({ completed: data.attempts.filter((attempt) => attempt.outcome === 'completed').length, played: data.attempts.length }), [data.attempts])
+  const stats = useMemo(() => {
+    const finished = data.attempts.filter((attempt) => attempt.outcome === 'completed')
+    return {
+      completed: finished.length,
+      played: data.attempts.length,
+      failed: data.attempts.filter((attempt) => attempt.outcome === 'failed').length,
+      clean: finished.filter((attempt) => attempt.mistakes === 0).length,
+      average: finished.length ? Math.round(finished.reduce((sum, attempt) => sum + attempt.elapsedSeconds, 0) / finished.length) : 0,
+      best: finished.length ? Math.min(...finished.map((attempt) => attempt.elapsedSeconds)) : 0,
+    }
+  }, [data.attempts])
 
   const newGame = (level: Difficulty) => {
     setDifficulty(level)
@@ -168,9 +180,45 @@ export default function App() {
     }
   }
 
-  const updateGame = (next: GameState) => setData((current) => ({ ...current, games: { ...current.games, [difficulty]: next } }))
+  const updateGame = (next: GameState) => setData((current) => {
+    const previous = current.games[difficulty]
+    let attempts = current.attempts
+    if (previous && !previous.started && next.started) {
+      const now = Date.now()
+      attempts = [...attempts, { id: `${next.puzzle.id}-${now}`, puzzleId: next.puzzle.id, difficulty, startedAt: now, endedAt: null, elapsedSeconds: 0, mistakes: 0, outcome: 'playing' }]
+    }
+    if (previous?.status === 'playing' && next.status !== 'playing') {
+      const endedAt = Date.now()
+      const outcome: Attempt['outcome'] = next.status === 'won' ? 'completed' : 'failed'
+      const index = [...attempts].reverse().findIndex((attempt) => attempt.puzzleId === next.puzzle.id && attempt.outcome === 'playing')
+      if (index >= 0) {
+        const actual = attempts.length - index - 1
+        attempts = attempts.map((attempt, attemptIndex) => attemptIndex === actual ? { ...attempt, endedAt, elapsedSeconds: next.elapsedSeconds, mistakes: next.mistakes, outcome } : attempt)
+      }
+    }
+    return { ...current, attempts, games: { ...current.games, [difficulty]: next } }
+  })
+
+  const downloadBackup = () => {
+    const url = URL.createObjectURL(exportData(data))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `karens-sudoku-backup-${new Date().toISOString().slice(0, 10)}.json`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importBackup = async (file: File) => {
+    const imported = parseImport(await file.text())
+    if (!imported) { window.alert('That file is not a valid Karen’s Sudoku backup.'); return }
+    if (window.confirm('This will replace all games, statistics, and settings on this device. Continue?')) setData(imported)
+  }
 
   if (screen === 'game' && game) return <GameBoard game={game} setGame={updateGame} onHome={() => { updateGame({ ...game, paused: true }); setScreen('home') }} />
+
+  if (screen === 'stats') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">Your progress</p><h2>Statistics</h2><div className="stat-grid"><div><strong>{stats.played}</strong><span>Attempts</span></div><div><strong>{stats.completed}</strong><span>Completed</span></div><div><strong>{stats.failed}</strong><span>Failed</span></div><div><strong>{stats.clean}</strong><span>No mistakes</span></div><div><strong>{stats.average ? formatTime(stats.average) : '—'}</strong><span>Average</span></div><div><strong>{stats.best ? formatTime(stats.best) : '—'}</strong><span>Best time</span></div></div>{difficulties.map((level) => { const attempts = data.attempts.filter((attempt) => attempt.difficulty === level); return <div className="difficulty-stat" key={level}><strong>{titleCase(level)}</strong><span>{attempts.filter((attempt) => attempt.outcome === 'completed').length} completed · {attempts.length} attempts</span></div> })}</main>
+
+  if (screen === 'settings') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">On this device</p><h2>Settings & data</h2><label className="setting-row"><span>Appearance</span><select value={data.settings.theme} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, theme: event.target.value as AppData['settings']['theme'] } }))}><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><label className="setting-row"><span>Sound feedback</span><input type="checkbox" checked={data.settings.sound} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, sound: event.target.checked } }))}/></label><label className="setting-row"><span>Haptic feedback</span><input type="checkbox" checked={data.settings.haptics} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, haptics: event.target.checked } }))}/></label><button className="data-button" onClick={() => setData((current) => ({ ...current, settings: { ...current.settings, introductionSeen: false } }))}>How to play</button><button className="data-button" onClick={downloadBackup}>Download backup</button><label className="data-button file-button">Import backup<input type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file) }}/></label><button className="data-button danger" onClick={() => { if (window.confirm('Reset statistics? Games and settings will remain.')) setData((current) => ({ ...current, attempts: [] })) }}>Reset statistics</button><button className="data-button danger" onClick={() => { if (window.confirm('Reset the entire app on this device? This cannot be undone.')) setData(defaultData()) }}>Reset entire app</button><p className="privacy-note">All data stays in this browser. Clearing browser site data removes it unless you download a backup first.</p></main>
 
   return <main className="app-shell">
     {!storageOkay && <div className="storage-warning" role="alert">Progress cannot be saved on this device. Keep this page open.</div>}
@@ -181,7 +229,9 @@ export default function App() {
         {difficulties.map((level) => <button key={level} onClick={() => newGame(level)}><span>{titleCase(level)}</span><small>{data.games[level]?.status === 'playing' && data.games[level]?.started ? `Resume · ${formatTime(data.games[level]!.elapsedSeconds)}` : data.queued[level] ? 'Ready to play' : 'New puzzle'}</small><b>›</b></button>)}
       </div>
     </section>
+    <nav className="home-nav" aria-label="App navigation"><button onClick={() => setScreen('stats')}>Statistics</button><button onClick={() => setScreen('settings')}>Settings & data</button></nav>
     <footer className="home-footer"><span>{stats.completed} completed</span><span>Stored only on this device</span></footer>
     {generating && <div className="modal-backdrop"><div className="generating" role="status"><span className="spinner"/><strong>Puzzle generating</strong><p>Finding a unique {generating} puzzle…</p><button onClick={() => { foreground.current = null; setGenerating(null) }}>Cancel</button></div></div>}
+    {!data.settings.introductionSeen && <div className="modal-backdrop"><section className="introduction" role="dialog" aria-modal="true" aria-labelledby="intro-title"><p className="kicker">Welcome</p><h2 id="intro-title">How Killer Sudoku works</h2><ul><li>Place 1–9 once in every row, column, and 3×3 box.</li><li>Digits inside each dotted cage add up to its small target.</li><li>A cage cannot repeat a digit.</li><li>Use Notes for candidates. Three incorrect final entries end an attempt.</li></ul><p>Your games stay in this browser and do not sync between devices.</p><button onClick={closeIntroduction}>Let’s play</button></section></div>}
   </main>
 }
