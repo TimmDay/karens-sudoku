@@ -1,6 +1,9 @@
 # Karen's Sudoku
 
-A mobile-first Killer Sudoku progressive web app designed primarily for current iPhone Safari. Puzzles and all player data are generated and stored locally; there is no account or server-side game data.
+No ads! Fuck Ads! 
+Snappy fast (all data stored in your browser).
+www.karens-sudoku.vercel.app
+Coded with Claude.
 
 ## Technology
 
