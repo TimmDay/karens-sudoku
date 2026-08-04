@@ -18,10 +18,10 @@ const cellBorders = (puzzle: Puzzle, cell: number) => {
   const row = Math.floor(cell / 9)
   const col = cell % 9
   return {
-    '--cage-top': row === 0 || puzzle.cageByCell[cell - 9] !== cage ? '3px' : '0px',
-    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '3px' : '0px',
-    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '3px' : '0px',
-    '--cage-left': col === 0 || puzzle.cageByCell[cell - 1] !== cage ? '3px' : '0px',
+    '--cage-top': row === 0 || puzzle.cageByCell[cell - 9] !== cage ? '5px' : '0px',
+    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '5px' : '0px',
+    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '5px' : '0px',
+    '--cage-left': col === 0 || puzzle.cageByCell[cell - 1] !== cage ? '5px' : '0px',
   } as React.CSSProperties
 }
 
