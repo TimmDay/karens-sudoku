@@ -24,10 +24,10 @@ const cellBorders = (puzzle: Puzzle, cell: number) => {
     '--grid-bottom': '1px',
     '--group-right': col === 2 || col === 5 ? '3px' : '0px',
     '--group-bottom': row === 2 || row === 5 ? '3px' : '0px',
-    '--cage-top': row === 0 ? '4px' : '0px',
-    '--cage-left': col === 0 ? '4px' : '0px',
-    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '4px' : '0px',
-    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '4px' : '0px',
+    '--cage-top': row === 0 ? 'var(--cage-line)' : 'transparent',
+    '--cage-left': col === 0 ? 'var(--cage-line)' : 'transparent',
+    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? 'var(--cage-line)' : 'transparent',
+    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? 'var(--cage-line)' : 'transparent',
   } as React.CSSProperties
 }
 
@@ -53,6 +53,7 @@ function GameBoard({
   const [selected, setSelected] = useState(0)
   const [mode, setMode] = useState<Mode>('entry')
   const [focused, setFocused] = useState(true)
+  const audioContext = useRef<AudioContext | null>(null)
   const selectedValue = game.cells[selected]?.value
   const selectedCage = game.puzzle.cageByCell[selected]
   const selectedRow = Math.floor(selected / 9)
@@ -63,8 +64,9 @@ function GameBoard({
     if (next === game) return
     if (haptics) navigator.vibrate?.(next.cells[selected]?.wrong ? [30, 30, 30] : 12)
     if (sound) {
-      const AudioContextClass = window.AudioContext
-      const context = new AudioContextClass()
+      audioContext.current ??= new window.AudioContext()
+      const context = audioContext.current
+      if (context.state === 'suspended') void context.resume()
       const oscillator = context.createOscillator()
       const gain = context.createGain()
       oscillator.frequency.value = next.cells[selected]?.wrong ? 180 : 520

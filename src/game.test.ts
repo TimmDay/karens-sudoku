@@ -33,6 +33,14 @@ describe('game state', () => {
     expect(eraseCell(enterDigit(createGame(puzzle), 0, wrong), 0).mistakes).toBe(1)
   })
 
+  it('does not refund a mistake on undo, and redo does not re-charge one', () => {
+    const wrong = puzzle.solution[0] === 1 ? 2 : 1
+    const game = enterDigit(createGame(puzzle), 0, wrong)
+    expect(undo(game).mistakes).toBe(1)
+    expect(undo(game).cells[0]?.value).toBeNull()
+    expect(redo(undo(game)).mistakes).toBe(1)
+  })
+
   it('requires erasing before replacing an incorrect entry', () => {
     const wrong = puzzle.solution[0] === 1 ? 2 : 1
     const game = enterDigit(createGame(puzzle), 0, wrong)

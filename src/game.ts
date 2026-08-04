@@ -79,7 +79,6 @@ export const undo = (game: GameState): GameState => {
   if (!previous) return game
   return {
     ...game,
-    ...previous,
     cells: copyCells(previous.cells),
     past: game.past.slice(0, -1),
     future: [snapshot(game), ...game.future],
@@ -92,7 +91,6 @@ export const redo = (game: GameState): GameState => {
   if (!next) return game
   return {
     ...game,
-    ...next,
     cells: copyCells(next.cells),
     past: [...game.past, snapshot(game)],
     future: game.future.slice(1),
