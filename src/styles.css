@@ -417,8 +417,9 @@ h1 {
 .cage-sum {
   position: absolute;
   z-index: 4;
-  top: 5px;
-  left: 6px;
+  top: 2.5px;
+  left: 3px;
+  color: var(--cage-line);
   font-size: clamp(0.52rem, 2vw, 0.68rem);
   font-weight: 750;
   line-height: 1;
