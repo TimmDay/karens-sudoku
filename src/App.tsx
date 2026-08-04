@@ -14,10 +14,10 @@ const cellBorders = (puzzle: Puzzle, cell: number) => {
   const row = Math.floor(cell / 9)
   const col = cell % 9
   return {
-    '--cage-top': row === 0 || puzzle.cageByCell[cell - 9] !== cage ? '2px' : '0px',
-    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '2px' : '0px',
-    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '2px' : '0px',
-    '--cage-left': col === 0 || puzzle.cageByCell[cell - 1] !== cage ? '2px' : '0px',
+    '--cage-top': row === 0 || puzzle.cageByCell[cell - 9] !== cage ? '3px' : '0px',
+    '--cage-right': col === 8 || puzzle.cageByCell[cell + 1] !== cage ? '3px' : '0px',
+    '--cage-bottom': row === 8 || puzzle.cageByCell[cell + 9] !== cage ? '3px' : '0px',
+    '--cage-left': col === 0 || puzzle.cageByCell[cell - 1] !== cage ? '3px' : '0px',
   } as React.CSSProperties
 }
 
@@ -110,6 +110,7 @@ export default function App() {
   const [data, setData] = useState<AppData>(() => loadData())
   const [screen, setScreen] = useState<Screen>('home')
   const [difficulty, setDifficulty] = useState<Difficulty>('easy')
+  const [statsFilter, setStatsFilter] = useState<'overall' | Difficulty>('overall')
   const [generating, setGenerating] = useState<Difficulty | null>(null)
   const [storageOkay, setStorageOkay] = useState(true)
   const worker = useRef<Worker | null>(null)
@@ -166,16 +167,18 @@ export default function App() {
   }, [difficulty, game])
 
   const stats = useMemo(() => {
-    const finished = data.attempts.filter((attempt) => attempt.outcome === 'completed')
+    const attempts = statsFilter === 'overall' ? data.attempts : data.attempts.filter((attempt) => attempt.difficulty === statsFilter)
+    const finished = attempts.filter((attempt) => attempt.outcome === 'completed')
     return {
       completed: finished.length,
-      played: data.attempts.length,
-      failed: data.attempts.filter((attempt) => attempt.outcome === 'failed').length,
+      played: attempts.length,
+      failed: attempts.filter((attempt) => attempt.outcome === 'failed').length,
+      abandoned: attempts.filter((attempt) => attempt.outcome === 'abandoned').length,
       clean: finished.filter((attempt) => attempt.mistakes === 0).length,
       average: finished.length ? Math.round(finished.reduce((sum, attempt) => sum + attempt.elapsedSeconds, 0) / finished.length) : 0,
       best: finished.length ? Math.min(...finished.map((attempt) => attempt.elapsedSeconds)) : 0,
     }
-  }, [data.attempts])
+  }, [data.attempts, statsFilter])
 
   const newGame = (level: Difficulty) => {
     setDifficulty(level)
@@ -257,7 +260,7 @@ export default function App() {
 
   if (screen === 'game' && game) return <GameBoard game={game} setGame={updateGame} onHome={() => { updateGame({ ...game, paused: true }); setScreen('home') }} onRestart={() => setData((current) => ({ ...current, games: { ...current.games, [difficulty]: createGame(game.puzzle) } }))} onNewPuzzle={() => startFreshPuzzle(difficulty)} sound={data.settings.sound} haptics={data.settings.haptics} />
 
-  if (screen === 'stats') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">Your progress</p><h2>Statistics</h2><div className="stat-grid"><div><strong>{stats.played}</strong><span>Attempts</span></div><div><strong>{stats.completed}</strong><span>Completed</span></div><div><strong>{stats.played ? `${Math.round(stats.completed / stats.played * 100)}%` : '—'}</strong><span>Completion rate</span></div><div><strong>{stats.failed}</strong><span>Failed</span></div><div><strong>{stats.clean}</strong><span>No mistakes</span></div><div><strong>{stats.average ? formatTime(stats.average) : '—'}</strong><span>Average</span></div><div><strong>{stats.best ? formatTime(stats.best) : '—'}</strong><span>Best time</span></div></div>{difficulties.map((level) => { const attempts = data.attempts.filter((attempt) => attempt.difficulty === level); return <div className="difficulty-stat" key={level}><strong>{titleCase(level)}</strong><span>{attempts.filter((attempt) => attempt.outcome === 'completed').length} completed · {attempts.length} attempts</span></div> })}</main>
+  if (screen === 'stats') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">Your progress</p><h2>Statistics</h2><div className="stats-filter" role="group" aria-label="Filter statistics by difficulty">{(['overall', ...difficulties] as const).map((filter) => <button key={filter} className={statsFilter === filter ? 'active' : ''} aria-pressed={statsFilter === filter} onClick={() => setStatsFilter(filter)}>{titleCase(filter)}</button>)}</div><h3 className="stats-heading">{titleCase(statsFilter)}</h3><div className="stat-grid"><div><strong>{stats.played}</strong><span>Attempts</span></div><div><strong>{stats.completed}</strong><span>Completed</span></div><div><strong>{stats.played ? `${Math.round(stats.completed / stats.played * 100)}%` : '—'}</strong><span>Completion rate</span></div><div><strong>{stats.failed}</strong><span>Failed</span></div><div><strong>{stats.abandoned}</strong><span>Abandoned</span></div><div><strong>{stats.clean}</strong><span>No mistakes</span></div><div><strong>{stats.average ? formatTime(stats.average) : '—'}</strong><span>Average</span></div><div><strong>{stats.best ? formatTime(stats.best) : '—'}</strong><span>Best time</span></div></div></main>
 
   if (screen === 'settings') return <main className="app-shell panel-screen"><button className="back-link" onClick={() => setScreen('home')}>‹ Home</button><p className="kicker">On this device</p><h2>Settings & data</h2><label className="setting-row"><span>Appearance</span><select value={data.settings.theme} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, theme: event.target.value as AppData['settings']['theme'] } }))}><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label><label className="setting-row"><span>Sound feedback</span><input type="checkbox" checked={data.settings.sound} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, sound: event.target.checked } }))}/></label><label className="setting-row"><span>Haptic feedback</span><input type="checkbox" checked={data.settings.haptics} onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, haptics: event.target.checked } }))}/></label><button className="data-button" onClick={() => setData((current) => ({ ...current, settings: { ...current.settings, introductionSeen: false } }))}>How to play</button><button className="data-button" onClick={downloadBackup}>Download backup</button><label className="data-button file-button">Import backup<input type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file) }}/></label><button className="data-button danger" onClick={() => { if (window.confirm('Reset statistics? Games and settings will remain.')) setData((current) => ({ ...current, attempts: [] })) }}>Reset statistics</button><button className="data-button danger" onClick={() => { if (window.confirm('Reset the entire app on this device? This cannot be undone.')) setData(defaultData()) }}>Reset entire app</button><p className="privacy-note">All data stays in this browser. Clearing browser site data removes it unless you download a backup first.</p></main>
 
