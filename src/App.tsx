@@ -625,14 +625,14 @@ export default function App() {
           9
         </span>
         <div>
-          <p className="eyebrow">A quiet daily challenge</p>
+          <p className="eyebrow">A puzzle for breastfeeding time</p>
           <h1>Karen’s Sudoku</h1>
         </div>
       </header>
       <section className="welcome-card" aria-labelledby="welcome-title">
         <p className="kicker">Killer Sudoku</p>
         <h2 id="welcome-title">Happy Woife, happy Loife.</h2>
-        <p>Choose a difficulty and settle into a new puzzle.</p>
+        <p>oh what a mom</p>
         <div className="difficulty-list">
           {difficulties.map((level) => {
             const active = data.games[level]?.status === 'playing' && data.games[level]?.started
