@@ -18,6 +18,31 @@
 - [x] Use a calm, warm, highly legible visual design chosen during implementation.
 - [x] Prepare Vercel configuration but defer connecting and deploying the project until the owner is ready.
 - [x] Rely on manual user testing rather than Playwright end-to-end tests.
+- [x] Target WCAG 2.2 AA for contrast, focus handling, accessible labels, and touch targets.
+
+## Delivery milestones
+
+### Milestone 1 — Playable MVP
+
+- [ ] Generate and display a valid Killer Sudoku puzzle.
+- [ ] Support final entries, notes, erasing, mistakes, undo, and redo.
+- [ ] Implement the active-play timer, pause behavior, autosave, and resume.
+- [ ] Provide a functional mobile-first home screen and game board.
+
+### Milestone 2 — Reliable release candidate
+
+- [ ] Verify unique solutions independently of the stored solution.
+- [ ] Calibrate all four difficulty levels using solver techniques and a representative corpus.
+- [ ] Complete persistent background generation for all four difficulties.
+- [ ] Complete statistics, data export/import, storage recovery, and automated tests.
+- [ ] Complete the written manual test checklist.
+
+### Milestone 3 — Production PWA
+
+- [ ] Complete offline support, installation metadata, icons, themes, onboarding, and visual polish.
+- [ ] Complete accessibility and performance audits.
+- [ ] Add Vercel configuration and complete the production release checklist.
+- [ ] Connect and deploy to Vercel when the owner is ready.
 
 ## 1. Project foundation
 
@@ -46,13 +71,17 @@
 - [ ] Calculate cage sums and reject cages containing duplicate solution digits.
 - [ ] Avoid excessively large, awkward, or visually confusing cages.
 - [ ] Build a Killer Sudoku solver that does not depend on the stored solution.
-- [ ] Verify that every generated puzzle has exactly one solution.
+- [ ] Verify that every generated puzzle has exactly one solution before it enters either the foreground game or background queue.
 - [ ] Make generation deterministic from a seed for reproducibility and debugging.
 - [ ] Run generation and validation in a Web Worker so the interface remains responsive.
 - [ ] Show a loading spinner and the message “Puzzle generating” while generating a foreground puzzle.
+- [ ] Allow the player to cancel foreground generation and return home.
+- [ ] Never silently lower the requested difficulty when generation takes a long time; continue retrying valid seeds until successful or cancelled.
 - [ ] Maintain a background queue containing the next puzzle for Easy, Medium, Hard, and Expert.
 - [ ] Refill a difficulty's queue slot in the background after its prepared puzzle is consumed.
 - [ ] Schedule background generation so it does not interfere with touch input, timer accuracy, or active play.
+- [ ] Persist one queued puzzle per difficulty in `localStorage` so prepared puzzles survive refresh or browser closure.
+- [ ] Validate every restored queued puzzle before making it available to play.
 - [ ] Prevent recently played puzzle IDs from being generated again.
 - [ ] Save a generated puzzle before play begins so a refresh cannot replace it.
 
@@ -82,6 +111,8 @@
 - [ ] Show resumable games with elapsed time, mistakes, and difficulty.
 - [ ] Support one active unfinished game per difficulty.
 - [ ] Confirm before replacing or abandoning an unfinished game.
+- [ ] Record replacement or voluntary restart of a started game as an abandoned attempt.
+- [ ] Do not record abandonment when replacing a game in which no entry or note was made.
 - [ ] Add navigation to statistics, settings, and data management.
 
 ## 7. Mobile-first game board
@@ -121,6 +152,7 @@
 - [ ] Pause when the page is hidden or the phone is locked.
 - [ ] Provide an explicit pause control.
 - [ ] Hide the board while explicitly paused.
+- [ ] Pause active time whenever the board is hidden, the page is not visible, or another in-app screen is active.
 - [ ] Restore timer state accurately after refresh, browser closure, or a crash.
 - [ ] Autosave after every game action.
 
@@ -157,9 +189,11 @@
 
 - [ ] Persist active games, move history, statistics, settings, and recently used puzzle IDs.
 - [ ] Handle unavailable, full, or corrupted browser storage gracefully.
+- [ ] Continue the current session in memory when storage is unavailable and show a persistent warning that progress cannot be saved.
 - [ ] Add versioned migrations for stored data.
 - [ ] Export all local app data to a downloadable JSON backup.
-- [ ] Import a backup with validation and a confirmation preview.
+- [ ] Import a backup only after validation, a replacement preview, and explicit confirmation that all current local data will be replaced.
+- [ ] Offer to download a safety backup of current data before completing an import.
 - [ ] Provide separate controls to reset statistics or reset the entire app.
 - [ ] Explain that clearing Safari website data removes local progress unless it was exported.
 
@@ -186,13 +220,17 @@
 - [ ] Maintain a manual user-test checklist for new game, resume, win, loss, restart, and data reset.
 - [ ] Test touch interactions on small and large iPhones.
 - [ ] Test Safari refresh, backgrounding, phone locking, offline use, and home-screen installation.
-- [ ] Audit colour contrast, screen-reader labels, focus order, and reduced motion.
-- [ ] Set acceptable generation-time and bundle-size budgets.
+- [ ] Audit colour contrast, screen-reader labels, focus order, touch targets, and reduced motion against WCAG 2.2 AA.
+- [ ] Keep touch feedback under 100 ms during ordinary play.
+- [ ] Target an initial compressed JavaScript payload under 200 KB.
+- [ ] Measure generation performance on current iPhones before setting final foreground and background generation-time budgets.
+- [ ] Keep automated unit and property tests separate from the written manual release checklist.
 
 ## 15. Release
 
 - [ ] Add privacy copy explaining that all personal game data remains in the browser.
-- [ ] Add a first-run introduction covering cages, modes, mistakes, and local storage.
+- [ ] Add a short, dismissible first-run introduction covering cages, modes, mistakes, and local storage.
+- [ ] Allow the introduction to be reopened from Settings.
 - [ ] Create production icons and app metadata.
 - [ ] Run the full automated and manual release checklist.
 - [ ] Deploy the production build to Vercel.
