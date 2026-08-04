@@ -8,6 +8,7 @@ export interface SolveResult {
   solution: number[] | null
   nodes: number
   techniques: Partial<Record<SolveTechnique, number>>
+  aborted: boolean
 }
 
 const FULL_MASK = 0b1111111110
@@ -31,10 +32,11 @@ const combinationMasks = (size: number, sum: number): number[] => {
   return masks
 }
 
-export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, limit = 2): SolveResult => {
+export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, limit = 2, maxNodes?: number): SolveResult => {
   let count = 0
   let first: number[] | null = null
   let nodes = 0
+  let aborted = false
   const techniques: Partial<Record<SolveTechnique, number>> = {}
   const cageMasks = puzzle.cages.map((cage) => combinationMasks(cage.cells.length, cage.sum))
 
@@ -91,7 +93,7 @@ export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, lim
   }
 
   const search = (input: number[]) => {
-    if (count >= limit) return
+    if (count >= limit || aborted) return
     const grid = [...input]
     if (!propagate(grid)) return
     let chosen = -1
@@ -111,15 +113,19 @@ export const countSolutions = (puzzle: Pick<Puzzle, 'cages' | 'cageByCell'>, lim
     }
     nodes++
     techniques.search = (techniques.search ?? 0) + 1
+    if (maxNodes !== undefined && nodes > maxNodes) {
+      aborted = true
+      return
+    }
     for (const digit of digitsFromMask(chosenMask)) {
       const branch = [...grid]
       branch[chosen] = digit
       search(branch)
-      if (count >= limit) return
+      if (count >= limit || aborted) return
     }
   }
 
   techniques['cage-combination'] = puzzle.cages.length
   search(Array<number>(81).fill(0))
-  return { count, solution: first, nodes, techniques }
+  return { count, solution: first, nodes, techniques, aborted }
 }

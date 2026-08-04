@@ -79,18 +79,28 @@ const maxSearchNodes: Partial<Record<Difficulty, number>> = {
 
 export const generatePuzzle = (difficulty: Difficulty, initialSeed = Date.now() >>> 0, maxAttempts = 300): Puzzle => {
   const limit = maxSearchNodes[difficulty]
-  let easiestFound: { puzzle: Puzzle; nodes: number } | null = null
+  const isUsable = (puzzle: Puzzle) => difficulty === 'easy' || puzzle.cages.every((cage) => cage.cells.length !== 1)
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const seed = (initialSeed + Math.imul(attempt, 0x9e3779b1)) >>> 0
     const puzzle = createCandidate(difficulty, seed)
-    if (difficulty !== 'easy' && puzzle.cages.some((cage) => cage.cells.length === 1)) continue
-    const result = countSolutions(puzzle, 2)
-    if (result.count !== 1) continue
-    if (limit === undefined || result.nodes <= limit) return puzzle
-    if (!easiestFound || result.nodes < easiestFound.nodes) easiestFound = { puzzle, nodes: result.nodes }
+    if (!isUsable(puzzle)) continue
+    // Bound the solver's own effort so rejecting a too-hard candidate stays cheap
+    // instead of fully solving every deep/slow candidate before discarding it.
+    const result = countSolutions(puzzle, 2, limit)
+    if (!result.aborted && result.count === 1) return puzzle
   }
-  if (easiestFound) return easiestFound.puzzle
-  throw new Error(`Could not generate a unique ${difficulty} puzzle after ${maxAttempts} attempts`)
+
+  // Fallback: if nothing hit the difficulty target within budget, guarantee a valid
+  // puzzle still comes back (uncapped search), matching prior generator reliability.
+  const fallbackAttempts = 100
+  for (let attempt = maxAttempts; attempt < maxAttempts + fallbackAttempts; attempt++) {
+    const seed = (initialSeed + Math.imul(attempt, 0x9e3779b1)) >>> 0
+    const puzzle = createCandidate(difficulty, seed)
+    if (!isUsable(puzzle)) continue
+    if (countSolutions(puzzle, 2).count === 1) return puzzle
+  }
+  throw new Error(`Could not generate a unique ${difficulty} puzzle after ${maxAttempts + fallbackAttempts} attempts`)
 }
 
 export { countSolutions } from './engine/solver'
