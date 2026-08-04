@@ -684,14 +684,16 @@ export default function App() {
         <div className="modal-backdrop">
           <section className="introduction" role="dialog" aria-modal="true" aria-labelledby="intro-title">
             <p className="kicker">Welcome</p>
-            <h2 id="intro-title">How Killer Sudoku works</h2>
+            <h2 id="intro-title">Cage Fight Sudoku</h2>
             <ul>
               <li>Place 1–9 once in every row, column, and 3×3 box.</li>
               <li>Digits inside each dotted cage add up to its small target.</li>
               <li>A cage cannot repeat a digit.</li>
-              <li>Use Notes for candidates. Three incorrect final entries end an attempt.</li>
+              <li>Use Notes for candidates. Three incorrect final entries end the game.</li>
             </ul>
             <p>Your games stay in this browser and do not sync between devices.</p>
+            <p>If you clear your browser cache, you will lose your stats</p>
+            <p>No Ads! Because fuck ads.</p>
             <button onClick={closeIntroduction}>Let’s play</button>
           </section>
         </div>
