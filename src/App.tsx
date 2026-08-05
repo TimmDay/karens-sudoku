@@ -37,8 +37,6 @@ function GameBoard({
   onHome,
   onRestart,
   onNewPuzzle,
-  sound,
-  haptics,
   newBest,
 }: {
   game: GameState
@@ -46,14 +44,11 @@ function GameBoard({
   onHome: () => void
   onRestart: () => void
   onNewPuzzle: () => void
-  sound: boolean
-  haptics: boolean
   newBest: boolean
 }) {
   const [selected, setSelected] = useState(0)
   const [mode, setMode] = useState<Mode>('entry')
   const [focused, setFocused] = useState(true)
-  const audioContext = useRef<AudioContext | null>(null)
   const selectedValue = game.cells[selected]?.value
   const selectedCage = game.puzzle.cageByCell[selected]
   const selectedRow = Math.floor(selected / 9)
@@ -62,20 +57,6 @@ function GameBoard({
   const input = (digit: number) => {
     const next = mode === 'notes' ? toggleNote(game, selected, digit) : enterDigit(game, selected, digit)
     if (next === game) return
-    if (haptics) navigator.vibrate?.(next.cells[selected]?.wrong ? [30, 30, 30] : 12)
-    if (sound) {
-      audioContext.current ??= new window.AudioContext()
-      const context = audioContext.current
-      if (context.state === 'suspended') void context.resume()
-      const oscillator = context.createOscillator()
-      const gain = context.createGain()
-      oscillator.frequency.value = next.cells[selected]?.wrong ? 180 : 520
-      gain.gain.setValueAtTime(0.025, context.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.08)
-      oscillator.connect(gain).connect(context.destination)
-      oscillator.start()
-      oscillator.stop(context.currentTime + 0.08)
-    }
     setGame(next)
   }
   const completeDigits = new Set(
@@ -468,8 +449,6 @@ export default function App() {
         }}
         onRestart={() => setData((current) => ({ ...current, games: { ...current.games, [difficulty]: createGame(game.puzzle) } }))}
         onNewPuzzle={() => startFreshPuzzle(difficulty)}
-        sound={data.settings.sound}
-        haptics={data.settings.haptics}
         newBest={
           game.status === 'won' &&
           game.elapsedSeconds <=
@@ -564,22 +543,6 @@ export default function App() {
             <option value="light">Light</option>
             <option value="dark">Dark</option>
           </select>
-        </label>
-        <label className="setting-row">
-          <span>Sound feedback</span>
-          <input
-            type="checkbox"
-            checked={data.settings.sound}
-            onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, sound: event.target.checked } }))}
-          />
-        </label>
-        <label className="setting-row">
-          <span>Haptic feedback</span>
-          <input
-            type="checkbox"
-            checked={data.settings.haptics}
-            onChange={(event) => setData((current) => ({ ...current, settings: { ...current.settings, haptics: event.target.checked } }))}
-          />
         </label>
         <button
           className="data-button"

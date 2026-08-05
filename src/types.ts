@@ -55,8 +55,6 @@ export interface Attempt {
 
 export interface Settings {
   theme: 'system' | 'light' | 'dark'
-  sound: boolean
-  haptics: boolean
   introductionSeen: boolean
 }
 

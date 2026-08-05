@@ -204,9 +204,7 @@
 - [x] Ensure new deployments update cached assets safely without losing game data.
 - [x] Support light, dark, and system themes.
 - [x] Respect reduced-motion preferences.
-- [x] Add optional sound feedback.
-- [x] Add optional haptic feedback where iOS browser support permits it.
-- [x] Keep sound and haptics disabled or subtle by default.
+- [x] Tried optional sound and haptic feedback; removed since neither worked reliably in practice (iOS Safari has no Vibration API support at all, and sound proved unreliable enough not to be worth keeping).
 
 ## 14. Quality and testing
 

@@ -10,7 +10,7 @@ export const defaultData = (): AppData => ({
   attempts: [],
   queued: {},
   recentPuzzleIds: [],
-  settings: { theme: 'system', sound: false, haptics: false, introductionSeen: false },
+  settings: { theme: 'system', introductionSeen: false },
 })
 
 const validGame = (game: unknown): game is GameState =>
