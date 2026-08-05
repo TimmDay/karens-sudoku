@@ -640,9 +640,9 @@ export default function App() {
         </div>
       </header>
       <section className="welcome-card" aria-labelledby="welcome-title">
-        <p className="kicker">Killer Sudoku</p>
+        <p className="kicker">Oh what a mom</p>
         <h2 id="welcome-title">Happy Woife, happy Loife.</h2>
-        <p>oh what a mom</p>
+        <p>No Ads! Fuck Ads! All data is local (i.e your stats will clear if you clear cache)</p>
         <div className="difficulty-list">
           {difficulties.map((level) => {
             const active = data.games[level]?.status === 'playing' && data.games[level]?.started
