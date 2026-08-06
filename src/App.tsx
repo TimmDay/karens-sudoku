@@ -152,7 +152,7 @@ function GameBoard({
                   </span>
                 )}
                 {cell.value ? (
-                  <span className="cell-value">{cell.value}</span>
+                  <span className={`cell-value ${cell.given ? 'given' : ''}`}>{cell.value}</span>
                 ) : (
                   <span className="notes">
                     {Array.from({ length: 9 }, (_, digit) => {

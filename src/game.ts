@@ -1,23 +1,42 @@
-import type { CellState, GameSnapshot, GameState, Puzzle } from './types'
+import type { CellState, Difficulty, GameSnapshot, GameState, Puzzle } from './types'
 import { BOXES, COLS, ROWS } from './engine/grid'
+import { randomFor, shuffle } from './engine/random'
 
-const emptyCells = (): CellState[] => Array.from({ length: 81 }, () => ({ value: null, notes: [], wrong: false }))
+// How many cells start pre-filled with the correct answer, to ease the easier
+// difficulty levels. Hard and expert are unconstrained (already well-tuned).
+const prefillCounts: Partial<Record<Difficulty, number>> = { easy: 5, medium: 3 }
+
 const copyCells = (cells: readonly CellState[]) => cells.map((cell) => ({ ...cell, notes: [...cell.notes] }))
 const snapshot = (game: GameState): GameSnapshot => ({ cells: copyCells(game.cells), mistakes: game.mistakes, status: game.status })
 
-export const createGame = (puzzle: Puzzle): GameState => ({
-  version: 1,
-  puzzle,
-  cells: emptyCells(),
-  mistakes: 0,
-  elapsedSeconds: 0,
-  started: false,
-  status: 'playing',
-  savedAt: Date.now(),
-  paused: false,
-  past: [],
-  future: [],
-})
+// Seeded off the puzzle (decorrelated from its own generation seed) so the
+// same puzzle always gets the same givens, e.g. across a "restart same puzzle".
+const pickPrefilledCells = (puzzle: Puzzle, count: number): Set<number> => {
+  const random = randomFor(puzzle.seed ^ 0x5bd1e995)
+  const indices = Array.from({ length: 81 }, (_, index) => index)
+  return new Set(shuffle(indices, random).slice(0, count))
+}
+
+export const createGame = (puzzle: Puzzle): GameState => {
+  const prefilled = pickPrefilledCells(puzzle, prefillCounts[puzzle.difficulty] ?? 0)
+  return {
+    version: 1,
+    puzzle,
+    cells: Array.from({ length: 81 }, (_, index) =>
+      prefilled.has(index)
+        ? { value: puzzle.solution[index]!, notes: [], wrong: false, given: true }
+        : { value: null, notes: [], wrong: false, given: false },
+    ),
+    mistakes: 0,
+    elapsedSeconds: 0,
+    started: false,
+    status: 'playing',
+    savedAt: Date.now(),
+    paused: false,
+    past: [],
+    future: [],
+  }
+}
 
 const withHistory = (game: GameState, update: (draft: GameState) => void): GameState => {
   if (game.status !== 'playing') return game
@@ -68,9 +87,9 @@ export const toggleNote = (game: GameState, cell: number, digit: number): GameSt
 
 export const eraseCell = (game: GameState, cell: number): GameState => {
   const current = game.cells[cell]
-  if (!current || (!current.value && !current.notes.length)) return game
+  if (!current || current.given || (!current.value && !current.notes.length)) return game
   return withHistory(game, (next) => {
-    next.cells[cell] = { value: null, notes: [], wrong: false }
+    next.cells[cell] = { value: null, notes: [], wrong: false, given: false }
   })
 }
 

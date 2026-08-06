@@ -20,6 +20,7 @@ export interface CellState {
   value: number | null
   notes: number[]
   wrong: boolean
+  given: boolean
 }
 
 export interface GameSnapshot {

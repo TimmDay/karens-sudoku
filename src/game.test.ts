@@ -3,7 +3,8 @@ import { generatePuzzle } from './generator'
 import { createGame, enterDigit, eraseCell, redo, tick, toggleNote, undo } from './game'
 
 describe('game state', () => {
-  const puzzle = generatePuzzle('easy', 12)
+  // Uses a difficulty with no pre-filled givens so cell 0-2 are always editable.
+  const puzzle = generatePuzzle('hard', 12)
 
   it('starts on the first note and toggles candidates', () => {
     const game = toggleNote(createGame(puzzle), 0, 4)
@@ -60,5 +61,20 @@ describe('game state', () => {
     const started = toggleNote(untouched, 0, 1)
     expect(tick(started).elapsedSeconds).toBe(1)
     expect(tick({ ...started, paused: true }).elapsedSeconds).toBe(0)
+  })
+
+  it('pre-fills correct givens on easier difficulties that cannot be erased or overwritten', () => {
+    const easyPuzzle = generatePuzzle('easy', 34)
+    const game = createGame(easyPuzzle)
+    const givens = game.cells.filter((cell) => cell.given)
+    expect(givens).toHaveLength(5)
+    for (const [index, cell] of game.cells.entries()) if (cell.given) expect(cell.value).toBe(easyPuzzle.solution[index])
+    const givenIndex = game.cells.findIndex((cell) => cell.given)
+    expect(eraseCell(game, givenIndex)).toBe(game)
+    expect(enterDigit(game, givenIndex, easyPuzzle.solution[givenIndex]!)).toBe(game)
+  })
+
+  it('does not pre-fill any cells on hard puzzles', () => {
+    expect(createGame(puzzle).cells.some((cell) => cell.given)).toBe(false)
   })
 })

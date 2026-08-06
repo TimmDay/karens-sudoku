@@ -95,6 +95,7 @@
 - [ ] Record solver techniques and a difficulty score during validation.
 - [ ] Generate a representative test corpus for all four levels.
 - [ ] Play-test and tune difficulty thresholds on iPhone.
+- [x] Ease Easy and Medium further by pre-filling some cells as correct givens (5 for Easy, 3 for Medium) that can't be erased or overwritten; Hard and Expert are unchanged.
 
 ## 5. Local player data
 

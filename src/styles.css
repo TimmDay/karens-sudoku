@@ -448,6 +448,10 @@ h1 {
   font-weight: 650;
   line-height: 1;
 }
+.cell-value.given {
+  color: #6d6557;
+  font-weight: 500;
+}
 .notes {
   position: relative;
   z-index: 4;
@@ -806,6 +810,9 @@ h1 {
   .cell.wrong {
     color: #ffb5aa;
     background: #4b2927;
+  }
+  .cell-value.given {
+    color: #c8bfae;
   }
   .difficulty-choice .replace-game {
     color: #ffb5aa;
