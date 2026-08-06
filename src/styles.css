@@ -12,7 +12,7 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --grid-line: #ebe5da;
-  --box-line: #857e6e;
+  --box-line: #ebe5da;
   --cage-line: #4b453b;
 }
 
@@ -730,7 +730,7 @@ h1 {
   color: #f4eee2;
   background: #171b19;
   --grid-line: rgba(244, 238, 226, 0.1);
-  --box-line: rgba(244, 238, 226, 0.3);
+  --box-line: rgba(244, 238, 226, 0.1);
   --cage-line: #b2985e;
 }
 [data-theme='dark'] .welcome-card,
@@ -759,7 +759,7 @@ h1 {
     color: #f4eee2;
     background: #171b19;
     --grid-line: rgba(244, 238, 226, 0.1);
-    --box-line: rgba(244, 238, 226, 0.3);
+    --box-line: rgba(244, 238, 226, 0.1);
     --cage-line: #b2985e;
   }
   .welcome-card {
