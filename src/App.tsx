@@ -605,7 +605,7 @@ export default function App() {
       <section className="welcome-card" aria-labelledby="welcome-title">
         <p className="kicker">Oh what a mom</p>
         <h2 id="welcome-title">Happy Woife, happy Loife.</h2>
-        <p>No Ads! Fuck Ads! All data is local and your own</p>
+        <p>No Ads! No tracking! Data local only!</p>
         <div className="difficulty-list">
           {difficulties.map((level) => {
             const active = data.games[level]?.status === 'playing' && data.games[level]?.started
@@ -643,7 +643,7 @@ export default function App() {
       </nav>
       <footer className="home-footer">
         <span>{stats.completed} completed</span>
-        <span>Stored only on this device. Clearing browser cache will clear your stats</span>
+        <span>Clearing browser cache will clear stats</span>
       </footer>
       {generating && (
         <div className="modal-backdrop">
