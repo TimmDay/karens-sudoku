@@ -43,15 +43,13 @@ export interface GameState {
   future: GameSnapshot[]
 }
 
-export interface Attempt {
-  id: string
-  puzzleId: string
-  difficulty: Difficulty
-  startedAt: number
-  endedAt: number | null
-  elapsedSeconds: number
-  mistakes: number
-  outcome: 'playing' | 'completed' | 'failed' | 'abandoned'
+export interface DifficultyStats {
+  completed: number
+  failed: number
+  abandoned: number
+  clean: number
+  totalSeconds: number
+  best: number | null
 }
 
 export interface Settings {
@@ -62,7 +60,7 @@ export interface Settings {
 export interface AppData {
   version: 1
   games: Partial<Record<Difficulty, GameState>>
-  attempts: Attempt[]
+  statistics: Record<Difficulty, DifficultyStats>
   queued: Partial<Record<Difficulty, Puzzle>>
   recentPuzzleIds: string[]
   settings: Settings

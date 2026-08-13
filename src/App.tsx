@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createGame, enterDigit, eraseCell, redo, tick, toggleNote, undo } from './game'
 import { defaultData, difficulties, exportData, loadData, parseImport, saveData } from './storage'
-import { summarizeAttempts } from './statistics'
-import type { AppData, Attempt, Difficulty, GameState, Puzzle } from './types'
+import { applyOutcome, summarizeStatistics } from './statistics'
+import type { AppData, Difficulty, GameState, Puzzle } from './types'
 
 type Screen = 'home' | 'game' | 'stats' | 'settings'
 type Mode = 'entry' | 'notes'
@@ -231,6 +231,11 @@ function GameBoard({
   )
 }
 
+// Coalesce rapid-fire changes (typing, per-second timer ticks) into one write, but never let a
+// pending save wait longer than SAVE_MAX_WAIT_MS so a crash/close can't lose much progress.
+const SAVE_DEBOUNCE_MS = 800
+const SAVE_MAX_WAIT_MS = 5000
+
 export default function App() {
   const [data, setData] = useState<AppData>(() => loadData())
   const [screen, setScreen] = useState<Screen>('home')
@@ -240,14 +245,46 @@ export default function App() {
   const [storageOkay, setStorageOkay] = useState(true)
   const worker = useRef<Worker | null>(null)
   const foreground = useRef<Difficulty | null>(null)
+  const pending = useRef<AppData | null>(null)
+  const saveTimeout = useRef<number | null>(null)
+  const lastSavedAt = useRef(0)
   const game = data.games[difficulty]
 
   const closeIntroduction = () => setData((current) => ({ ...current, settings: { ...current.settings, introductionSeen: true } }))
 
-  useEffect(() => {
-    const saved = saveData(data)
+  const flushSave = () => {
+    if (saveTimeout.current !== null) {
+      window.clearTimeout(saveTimeout.current)
+      saveTimeout.current = null
+    }
+    if (!pending.current) return
+    const saved = saveData(pending.current)
+    pending.current = null
+    lastSavedAt.current = Date.now()
     queueMicrotask(() => setStorageOkay(saved))
+  }
+
+  useEffect(() => {
+    pending.current = data
+    const sinceLastSave = Date.now() - lastSavedAt.current
+    if (sinceLastSave >= SAVE_MAX_WAIT_MS) {
+      flushSave()
+      return
+    }
+    if (saveTimeout.current !== null) window.clearTimeout(saveTimeout.current)
+    saveTimeout.current = window.setTimeout(flushSave, Math.min(SAVE_DEBOUNCE_MS, SAVE_MAX_WAIT_MS - sinceLastSave))
+    return () => {
+      if (saveTimeout.current !== null) window.clearTimeout(saveTimeout.current)
+    }
   }, [data])
+  useEffect(() => {
+    window.addEventListener('pagehide', flushSave)
+    document.addEventListener('visibilitychange', flushSave)
+    return () => {
+      window.removeEventListener('pagehide', flushSave)
+      document.removeEventListener('visibilitychange', flushSave)
+    }
+  }, [])
   useEffect(() => {
     document.documentElement.dataset.theme = data.settings.theme
   }, [data.settings.theme])
@@ -308,8 +345,8 @@ export default function App() {
   }, [difficulty, game])
 
   const stats = useMemo(() => {
-    return summarizeAttempts(data.attempts, statsFilter)
-  }, [data.attempts, statsFilter])
+    return summarizeStatistics(data.statistics, statsFilter)
+  }, [data.statistics, statsFilter])
 
   const newGame = (level: Difficulty) => {
     setDifficulty(level)
@@ -339,37 +376,14 @@ export default function App() {
   const updateGame = (next: GameState) =>
     setData((current) => {
       const previous = current.games[difficulty]
-      let attempts = current.attempts
-      if (previous && !previous.started && next.started) {
-        const now = Date.now()
-        attempts = [
-          ...attempts,
-          {
-            id: `${next.puzzle.id}-${now}`,
-            puzzleId: next.puzzle.id,
-            difficulty,
-            startedAt: now,
-            endedAt: null,
-            elapsedSeconds: 0,
-            mistakes: 0,
-            outcome: 'playing',
-          },
-        ]
-      }
-      if (previous?.status === 'playing' && next.status !== 'playing') {
-        const endedAt = Date.now()
-        const outcome: Attempt['outcome'] = next.status === 'won' ? 'completed' : 'failed'
-        const index = [...attempts].reverse().findIndex((attempt) => attempt.puzzleId === next.puzzle.id && attempt.outcome === 'playing')
-        if (index >= 0) {
-          const actual = attempts.length - index - 1
-          attempts = attempts.map((attempt, attemptIndex) =>
-            attemptIndex === actual
-              ? { ...attempt, endedAt, elapsedSeconds: next.elapsedSeconds, mistakes: next.mistakes, outcome }
-              : attempt,
-          )
-        }
-      }
-      return { ...current, attempts, games: { ...current.games, [difficulty]: next } }
+      const statistics =
+        previous?.status === 'playing' && next.status !== 'playing'
+          ? {
+              ...current.statistics,
+              [difficulty]: applyOutcome(current.statistics[difficulty], next.status === 'won' ? 'completed' : 'failed', next.elapsedSeconds, next.mistakes),
+            }
+          : current.statistics
+      return { ...current, statistics, games: { ...current.games, [difficulty]: next } }
     })
 
   const downloadBackup = () => {
@@ -388,9 +402,10 @@ export default function App() {
       return
     }
     const gameCount = Object.values(imported.games).filter(Boolean).length
-    const preview = `Backup preview:\n${gameCount} saved games\n${imported.attempts.length} attempts\nTheme: ${imported.settings.theme}`
+    const importedPlayed = summarizeStatistics(imported.statistics).played
+    const preview = `Backup preview:\n${gameCount} saved games\n${importedPlayed} attempts\nTheme: ${imported.settings.theme}`
     if (!window.confirm(`${preview}\n\nContinue to replacement options?`)) return
-    if (data.attempts.length || Object.keys(data.games).length) {
+    if (summarizeStatistics(data.statistics).played || Object.keys(data.games).length) {
       if (window.confirm('Download a safety backup of your current data before replacing it?')) downloadBackup()
     }
     if (window.confirm('Replace all current games, statistics, and settings with this backup?')) setData(imported)
@@ -400,30 +415,14 @@ export default function App() {
     const queued = data.queued[level]
     if (queued) {
       setData((current) => {
-        let attempts = current.attempts
         const oldGame = current.games[level]
-        if (abandon && oldGame?.started && oldGame.status === 'playing') {
-          const reverseIndex = [...attempts]
-            .reverse()
-            .findIndex((attempt) => attempt.puzzleId === oldGame.puzzle.id && attempt.outcome === 'playing')
-          if (reverseIndex >= 0) {
-            const actual = attempts.length - reverseIndex - 1
-            attempts = attempts.map((attempt, index) =>
-              index === actual
-                ? {
-                    ...attempt,
-                    outcome: 'abandoned',
-                    endedAt: Date.now(),
-                    elapsedSeconds: oldGame.elapsedSeconds,
-                    mistakes: oldGame.mistakes,
-                  }
-                : attempt,
-            )
-          }
-        }
+        const statistics =
+          abandon && oldGame?.started && oldGame.status === 'playing'
+            ? { ...current.statistics, [level]: applyOutcome(current.statistics[level], 'abandoned', oldGame.elapsedSeconds, oldGame.mistakes) }
+            : current.statistics
         return {
           ...current,
-          attempts,
+          statistics,
           queued: { ...current.queued, [level]: undefined },
           games: { ...current.games, [level]: createGame(queued) },
           recentPuzzleIds: [...current.recentPuzzleIds, queued.id].slice(-100),
@@ -449,16 +448,7 @@ export default function App() {
         }}
         onRestart={() => setData((current) => ({ ...current, games: { ...current.games, [difficulty]: createGame(game.puzzle) } }))}
         onNewPuzzle={() => startFreshPuzzle(difficulty)}
-        newBest={
-          game.status === 'won' &&
-          game.elapsedSeconds <=
-            Math.min(
-              ...data.attempts
-                .filter((attempt) => attempt.difficulty === difficulty && attempt.outcome === 'completed')
-                .map((attempt) => attempt.elapsedSeconds),
-              Number.POSITIVE_INFINITY,
-            )
-        }
+        newBest={game.status === 'won' && data.statistics[difficulty].best !== null && game.elapsedSeconds <= data.statistics[difficulty].best}
       />
     )
 
@@ -567,7 +557,8 @@ export default function App() {
         <button
           className="data-button danger"
           onClick={() => {
-            if (window.confirm('Reset statistics? Games and settings will remain.')) setData((current) => ({ ...current, attempts: [] }))
+            if (window.confirm('Reset statistics? Games and settings will remain.'))
+              setData((current) => ({ ...current, statistics: defaultData().statistics }))
           }}
         >
           Reset statistics

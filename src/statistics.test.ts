@@ -1,28 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { summarizeAttempts } from './statistics'
-import type { Attempt } from './types'
-
-const attempt = (difficulty: Attempt['difficulty'], outcome: Attempt['outcome'], elapsedSeconds: number, mistakes: number): Attempt => ({
-  id: `${difficulty}-${outcome}-${elapsedSeconds}`,
-  puzzleId: 'puzzle',
-  difficulty,
-  startedAt: 1,
-  endedAt: outcome === 'playing' ? null : 2,
-  elapsedSeconds,
-  mistakes,
-  outcome,
-})
+import { applyOutcome, emptyStats, summarizeStatistics } from './statistics'
+import type { Difficulty, DifficultyStats } from './types'
 
 describe('statistics', () => {
-  const attempts = [
-    attempt('easy', 'completed', 120, 0),
-    attempt('easy', 'completed', 180, 1),
-    attempt('easy', 'failed', 60, 3),
-    attempt('hard', 'abandoned', 30, 0),
-  ]
+  let easy = applyOutcome(emptyStats(), 'completed', 120, 0)
+  easy = applyOutcome(easy, 'completed', 180, 1)
+  easy = applyOutcome(easy, 'failed', 60, 3)
 
-  it('calculates overall summaries from completed attempts only', () => {
-    expect(summarizeAttempts(attempts)).toEqual({
+  const statistics: Record<Difficulty, DifficultyStats> = {
+    easy,
+    medium: emptyStats(),
+    hard: applyOutcome(emptyStats(), 'abandoned', 30, 0),
+    expert: emptyStats(),
+  }
+
+  it('calculates overall summaries across every difficulty', () => {
+    expect(summarizeStatistics(statistics)).toEqual({
       played: 4,
       completed: 2,
       failed: 1,
@@ -35,7 +28,7 @@ describe('statistics', () => {
   })
 
   it('filters every statistic by difficulty', () => {
-    expect(summarizeAttempts(attempts, 'hard')).toEqual({
+    expect(summarizeStatistics(statistics, 'hard')).toEqual({
       played: 1,
       completed: 0,
       failed: 0,
