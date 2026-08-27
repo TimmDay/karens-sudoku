@@ -22,6 +22,7 @@ describe('statistics', () => {
       abandoned: 1,
       clean: 1,
       completionRate: 50,
+      perfectRate: 25,
       average: 150,
       best: 120,
     })
@@ -35,6 +36,7 @@ describe('statistics', () => {
       abandoned: 1,
       clean: 0,
       completionRate: 0,
+      perfectRate: 0,
       average: null,
       best: null,
     })

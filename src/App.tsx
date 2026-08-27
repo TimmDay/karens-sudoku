@@ -495,8 +495,8 @@ export default function App() {
             <span>Failed</span>
           </div>
           <div>
-            <strong>{stats.abandoned}</strong>
-            <span>Abandoned</span>
+            <strong>{stats.perfectRate === null ? '—' : `${stats.perfectRate}%`}</strong>
+            <span>Percentage perfect</span>
           </div>
           <div>
             <strong>{stats.clean}</strong>

@@ -7,6 +7,7 @@ export interface StatisticsSummary {
   abandoned: number
   clean: number
   completionRate: number | null
+  perfectRate: number | null
   average: number | null
   best: number | null
 }
@@ -49,6 +50,7 @@ export const summarizeStatistics = (statistics: Record<Difficulty, DifficultySta
     abandoned: stats.abandoned,
     clean: stats.clean,
     completionRate: played ? Math.round((stats.completed / played) * 100) : null,
+    perfectRate: played ? Math.round((stats.clean / played) * 100) : null,
     average: stats.completed ? Math.round(stats.totalSeconds / stats.completed) : null,
     best: stats.best,
   }
