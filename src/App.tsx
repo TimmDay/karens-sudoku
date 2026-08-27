@@ -488,7 +488,7 @@ export default function App() {
           </div>
           <div>
             <strong>{stats.completionRate === null ? '—' : `${stats.completionRate}%`}</strong>
-            <span>Completion rate</span>
+            <span>Win rate</span>
           </div>
           <div>
             <strong>{stats.failed}</strong>
