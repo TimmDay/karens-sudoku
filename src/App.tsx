@@ -348,6 +348,10 @@ export default function App() {
     return summarizeStatistics(data.statistics, statsFilter)
   }, [data.statistics, statsFilter])
 
+  const overallStats = useMemo(() => {
+    return summarizeStatistics(data.statistics, 'overall')
+  }, [data.statistics])
+
   const newGame = (level: Difficulty) => {
     setDifficulty(level)
     const existing = data.games[level]
@@ -633,7 +637,7 @@ export default function App() {
         <button onClick={() => setScreen('settings')}>Settings & data</button>
       </nav>
       <footer className="home-footer">
-        <span>{stats.completed} completed</span>
+        <span>{overallStats.completed} completed</span>
         <span>Clearing browser cache will clear stats</span>
       </footer>
       {generating && (
