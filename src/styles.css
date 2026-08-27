@@ -670,6 +670,34 @@ h1 {
   color: #756d5f;
   font-size: 0.78rem;
 }
+.best-overall {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  height: 100%;
+}
+.best-corner {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+.best-corner b {
+  color: #315e54;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.best-corner i {
+  color: #756d5f;
+  font-size: 0.68rem;
+  font-style: normal;
+}
+.best-overall .best-corner:nth-child(2n) {
+  justify-self: end;
+  flex-direction: row-reverse;
+}
+.best-overall .best-corner:nth-child(n + 3) {
+  align-self: end;
+}
 .difficulty-stat {
   display: flex;
   justify-content: space-between;

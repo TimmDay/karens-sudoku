@@ -506,9 +506,20 @@ export default function App() {
             <strong>{stats.average !== null ? formatTime(stats.average) : '—'}</strong>
             <span>Average</span>
           </div>
-          <div>
-            <strong>{stats.best !== null ? formatTime(stats.best) : '—'}</strong>
-            <span>Best time</span>
+          <div className={statsFilter === 'overall' ? 'best-overall' : undefined}>
+            {statsFilter === 'overall' ? (
+              difficulties.map((level) => (
+                <span className="best-corner" key={level}>
+                  <b>{data.statistics[level].best !== null ? formatTime(data.statistics[level].best!) : '—'}</b>
+                  <i>{level[0]!.toUpperCase() + level.slice(1, 2)}</i>
+                </span>
+              ))
+            ) : (
+              <>
+                <strong>{stats.best !== null ? formatTime(stats.best) : '—'}</strong>
+                <span>Best time</span>
+              </>
+            )}
           </div>
         </div>
       </main>
