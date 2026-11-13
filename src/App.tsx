@@ -47,7 +47,8 @@ function GameBoard({
   newBest: boolean
 }) {
   const [selected, setSelected] = useState(0)
-  const [mode, setMode] = useState<Mode>('entry')
+  // Start in Notes mode so a stray key after returning can't cost a mistake.
+  const [mode, setMode] = useState<Mode>('notes')
   const [focused, setFocused] = useState(true)
   const selectedValue = game.cells[selected]?.value
   const selectedCage = game.puzzle.cageByCell[selected]
@@ -55,6 +56,7 @@ function GameBoard({
   const selectedCol = selected % 9
 
   const input = (digit: number) => {
+    if (game.paused) return
     const next = mode === 'notes' ? toggleNote(game, selected, digit) : enterDigit(game, selected, digit)
     if (next === game) return
     setGame(next)
@@ -67,6 +69,7 @@ function GameBoard({
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
+      if (game.paused) return
       if (/^[1-9]$/.test(event.key)) input(Number(event.key))
       else if (event.key === 'Backspace' || event.key === 'Delete') setGame(eraseCell(game, selected))
       else if (event.key.toLowerCase() === 'n' || event.key === ' ') setMode((value) => (value === 'entry' ? 'notes' : 'entry'))
@@ -91,6 +94,19 @@ function GameBoard({
     return () => document.removeEventListener('pointerdown', pointerDown)
   }, [])
 
+  useEffect(() => {
+    const toNotes = () => setMode('notes')
+    const visibility = () => {
+      if (document.hidden) toNotes()
+    }
+    window.addEventListener('blur', toNotes)
+    document.addEventListener('visibilitychange', visibility)
+    return () => {
+      window.removeEventListener('blur', toNotes)
+      document.removeEventListener('visibilitychange', visibility)
+    }
+  }, [])
+
   return (
     <main className="game-screen">
       <header className="game-header">
@@ -103,7 +119,10 @@ function GameBoard({
         </div>
         <button
           className="icon-button"
-          onClick={() => setGame({ ...game, paused: !game.paused })}
+          onClick={() => {
+            if (!game.paused) setMode('notes')
+            setGame({ ...game, paused: !game.paused })
+          }}
           aria-label={game.paused ? 'Resume game' : 'Pause game'}
         >
           {game.paused ? '▶' : 'Ⅱ'}
@@ -194,16 +213,16 @@ function GameBoard({
       </div>
 
       <div className="edit-tools">
-        <button onClick={() => setGame(undo(game))} disabled={!game.past.length}>
+        <button onClick={() => setGame(undo(game))} disabled={game.paused || !game.past.length}>
           ↶<span>Undo</span>
         </button>
-        <button onClick={() => setGame(eraseCell(game, selected))}>
+        <button onClick={() => setGame(eraseCell(game, selected))} disabled={game.paused}>
           ⌫<span>Erase</span>
         </button>
         <button className={mode === 'notes' ? 'active' : ''} onClick={() => setMode((value) => (value === 'entry' ? 'notes' : 'entry'))}>
           ✎<span>Notes {mode === 'notes' ? 'on' : 'off'}</span>
         </button>
-        <button onClick={() => setGame(redo(game))} disabled={!game.future.length}>
+        <button onClick={() => setGame(redo(game))} disabled={game.paused || !game.future.length}>
           ↷<span>Redo</span>
         </button>
       </div>
@@ -216,7 +235,7 @@ function GameBoard({
             {row.map((digit) => (
               <button
                 className={completeDigits.has(digit) ? 'complete' : ''}
-                disabled={completeDigits.has(digit)}
+                disabled={game.paused || completeDigits.has(digit)}
                 aria-label={completeDigits.has(digit) ? `${digit}, complete` : `${digit}`}
                 key={digit}
                 onClick={() => input(digit)}
