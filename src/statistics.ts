@@ -1,6 +1,6 @@
 import type { Difficulty, DifficultyStats } from './types'
 
-export interface StatisticsSummary {
+export type StatisticsSummary = {
   played: number
   completed: number
   failed: number
@@ -40,7 +40,10 @@ const combine = (a: DifficultyStats, b: DifficultyStats): DifficultyStats => ({
   best: a.best === null ? b.best : b.best === null ? a.best : Math.min(a.best, b.best),
 })
 
-export const summarizeStatistics = (statistics: Record<Difficulty, DifficultyStats>, filter: 'overall' | Difficulty = 'overall'): StatisticsSummary => {
+export const summarizeStatistics = (
+  statistics: Record<Difficulty, DifficultyStats>,
+  filter: 'overall' | Difficulty = 'overall',
+): StatisticsSummary => {
   const stats = filter === 'overall' ? Object.values(statistics).reduce(combine, emptyStats()) : statistics[filter]
   const played = stats.completed + stats.failed + stats.abandoned
   return {

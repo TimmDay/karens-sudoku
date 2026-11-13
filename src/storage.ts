@@ -33,7 +33,7 @@ const validStats = (stats: unknown): stats is DifficultyStats => {
 // Saves made before the statistics rewrite kept a flat, ever-growing log of every attempt
 // instead of a per-difficulty summary. Fold any of those into the new shape once on load so
 // existing totals (best times, completion counts) aren't lost.
-interface LegacyAttempt {
+type LegacyAttempt = {
   difficulty: Difficulty
   outcome: 'playing' | 'completed' | 'failed' | 'abandoned'
   elapsedSeconds: number

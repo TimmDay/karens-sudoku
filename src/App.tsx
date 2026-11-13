@@ -384,7 +384,12 @@ export default function App() {
         previous?.status === 'playing' && next.status !== 'playing'
           ? {
               ...current.statistics,
-              [difficulty]: applyOutcome(current.statistics[difficulty], next.status === 'won' ? 'completed' : 'failed', next.elapsedSeconds, next.mistakes),
+              [difficulty]: applyOutcome(
+                current.statistics[difficulty],
+                next.status === 'won' ? 'completed' : 'failed',
+                next.elapsedSeconds,
+                next.mistakes,
+              ),
             }
           : current.statistics
       return { ...current, statistics, games: { ...current.games, [difficulty]: next } }
@@ -422,7 +427,10 @@ export default function App() {
         const oldGame = current.games[level]
         const statistics =
           abandon && oldGame?.started && oldGame.status === 'playing'
-            ? { ...current.statistics, [level]: applyOutcome(current.statistics[level], 'abandoned', oldGame.elapsedSeconds, oldGame.mistakes) }
+            ? {
+                ...current.statistics,
+                [level]: applyOutcome(current.statistics[level], 'abandoned', oldGame.elapsedSeconds, oldGame.mistakes),
+              }
             : current.statistics
         return {
           ...current,
@@ -452,7 +460,9 @@ export default function App() {
         }}
         onRestart={() => setData((current) => ({ ...current, games: { ...current.games, [difficulty]: createGame(game.puzzle) } }))}
         onNewPuzzle={() => startFreshPuzzle(difficulty)}
-        newBest={game.status === 'won' && data.statistics[difficulty].best !== null && game.elapsedSeconds <= data.statistics[difficulty].best}
+        newBest={
+          game.status === 'won' && data.statistics[difficulty].best !== null && game.elapsedSeconds <= data.statistics[difficulty].best
+        }
       />
     )
 

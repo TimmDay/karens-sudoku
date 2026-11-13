@@ -1,12 +1,12 @@
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert'
 
-export interface Cage {
+export type Cage = {
   id: number
   sum: number
   cells: number[]
 }
 
-export interface Puzzle {
+export type Puzzle = {
   version: 1
   id: string
   seed: number
@@ -16,20 +16,20 @@ export interface Puzzle {
   cageByCell: number[]
 }
 
-export interface CellState {
+export type CellState = {
   value: number | null
   notes: number[]
   wrong: boolean
   given: boolean
 }
 
-export interface GameSnapshot {
+export type GameSnapshot = {
   cells: CellState[]
   mistakes: number
   status: GameState['status']
 }
 
-export interface GameState {
+export type GameState = {
   version: 1
   puzzle: Puzzle
   cells: CellState[]
@@ -43,7 +43,7 @@ export interface GameState {
   future: GameSnapshot[]
 }
 
-export interface DifficultyStats {
+export type DifficultyStats = {
   completed: number
   failed: number
   abandoned: number
@@ -52,12 +52,12 @@ export interface DifficultyStats {
   best: number | null
 }
 
-export interface Settings {
+export type Settings = {
   theme: 'system' | 'light' | 'dark'
   introductionSeen: boolean
 }
 
-export interface AppData {
+export type AppData = {
   version: 1
   games: Partial<Record<Difficulty, GameState>>
   statistics: Record<Difficulty, DifficultyStats>
