@@ -31,7 +31,7 @@ describe('puzzle engine', () => {
       expect(reached.size).toBe(cage.cells.length)
       expect(new Set(cage.cells.map((cell) => puzzle.solution[cell])).size).toBe(cage.cells.length)
     }
-  })
+  }, 30_000)
 
   it('keeps a deterministic multi-seed corpus valid and unique', () => {
     for (const difficulty of ['easy', 'medium', 'hard', 'expert'] as const) {

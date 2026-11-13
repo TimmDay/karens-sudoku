@@ -11,7 +11,11 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -b",
+    "check": "eslint . --max-warnings 0 && tsc -b",
+    "test:run": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -30,9 +34,17 @@
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
+    "husky": "^9.1.7",
     "jsdom": "latest",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.9.6",
     "typescript-eslint": "latest",
     "vitest": "latest"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --max-warnings 0",
+      "prettier --write"
+    ]
   }
 }

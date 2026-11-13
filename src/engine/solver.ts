@@ -3,7 +3,7 @@ import { BOXES, COLS, PEERS, ROWS } from './grid'
 
 export type SolveTechnique = 'naked-single' | 'hidden-single' | 'cage-combination' | 'search'
 
-export interface SolveResult {
+export type SolveResult = {
   count: number
   solution: number[] | null
   nodes: number
